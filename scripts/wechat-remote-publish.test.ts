@@ -4,6 +4,7 @@ import test from "node:test";
 
 import {
   buildSshArgs,
+  buildSshInvocation,
   findFreePort,
   normalizeRemoteConfig,
 } from "./wechat-remote-publish.ts";
@@ -182,4 +183,79 @@ test("findFreePort returns a usable loopback port", async () => {
       server.close((err) => (err ? reject(err) : resolve()));
     });
   });
+});
+
+test("normalizeRemoteConfig preserves password when identityFile is not set", () => {
+  const result = normalizeRemoteConfig({
+    host: "example.com",
+    password: "secret123",
+  });
+  assert.equal(result.password, "secret123");
+  assert.equal(result.identityFile, undefined);
+});
+
+test("normalizeRemoteConfig ignores password when identityFile is set", () => {
+  const result = normalizeRemoteConfig({
+    host: "example.com",
+    password: "secret123",
+    identityFile: "/home/me/.ssh/id_ed25519",
+  });
+  assert.equal(result.identityFile, "/home/me/.ssh/id_ed25519");
+  assert.equal(result.password, undefined);
+});
+
+test("buildSshInvocation uses sshpass prefix when password is set", () => {
+  const invocation = buildSshInvocation(
+    { host: "example.com", user: "root", port: 22, password: "secret123" },
+    1080,
+  );
+  assert.equal(invocation.command, "sshpass");
+  assert.deepEqual(invocation.args.slice(0, 4), ["-p", "secret123", "ssh", "-N"]);
+  assert.equal(invocation.logPrefix, "sshpass -p *** ssh");
+  // Ensure password does NOT leak into logPrefix
+  assert.ok(!invocation.logPrefix.includes("secret123"));
+});
+
+test("buildSshInvocation uses plain ssh when identityFile is set", () => {
+  const invocation = buildSshInvocation(
+    {
+      host: "example.com",
+      user: "root",
+      port: 22,
+      identityFile: "/home/me/.ssh/id_ed25519",
+    },
+    1080,
+  );
+  assert.equal(invocation.command, "ssh");
+  assert.equal(invocation.args[0], "-N");
+  assert.equal(invocation.logPrefix, "ssh");
+  assert.ok(!invocation.args.includes("sshpass"));
+});
+
+test("buildSshInvocation prefers identityFile over password when both are set", () => {
+  const invocation = buildSshInvocation(
+    {
+      host: "example.com",
+      user: "root",
+      port: 22,
+      password: "secret123",
+      identityFile: "/home/me/.ssh/id_ed25519",
+    },
+    1080,
+  );
+  // normalizeRemoteConfig would have cleared password, so buildSshInvocation sees no password
+  // This test passes the post-normalization config directly
+  assert.equal(invocation.command, "ssh");
+  assert.ok(!invocation.args.includes("sshpass"));
+});
+
+test("buildSshInvocation throws when neither password nor identityFile is provided", () => {
+  assert.throws(
+    () =>
+      buildSshInvocation(
+        { host: "example.com", user: "root", port: 22 },
+        1080,
+      ),
+    /Remote publish requires either remote_publish_password or remote_publish_identity_file/,
+  );
 });

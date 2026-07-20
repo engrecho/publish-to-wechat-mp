@@ -23,6 +23,7 @@ export interface WechatAccount {
   remote_publish_strict_host_key_checking?: StrictHostKeyChecking;
   remote_publish_connect_timeout?: number;
   remote_publish_proxy_jump?: string;
+  remote_publish_password?: string;
 }
 
 export interface WechatExtendConfig {
@@ -41,6 +42,7 @@ export interface WechatExtendConfig {
   remote_publish_strict_host_key_checking?: StrictHostKeyChecking;
   remote_publish_connect_timeout?: number;
   remote_publish_proxy_jump?: string;
+  remote_publish_password?: string;
   accounts?: WechatAccount[];
 }
 
@@ -62,6 +64,7 @@ export interface ResolvedAccount {
   remote_publish_strict_host_key_checking?: StrictHostKeyChecking;
   remote_publish_connect_timeout?: number;
   remote_publish_proxy_jump?: string;
+  remote_publish_password?: string;
 }
 
 function stripQuotes(s: string): string {
@@ -168,6 +171,7 @@ function parseWechatExtend(content: string): WechatExtendConfig {
       case "remote_publish_strict_host_key_checking": config.remote_publish_strict_host_key_checking = parseStrictHostKeyChecking("remote_publish_strict_host_key_checking", val); break;
       case "remote_publish_connect_timeout": config.remote_publish_connect_timeout = parsePositiveInt("remote_publish_connect_timeout", val); break;
       case "remote_publish_proxy_jump": config.remote_publish_proxy_jump = val; break;
+      case "remote_publish_password": config.remote_publish_password = val; break;
     }
   }
 
@@ -197,6 +201,7 @@ function parseWechatExtend(content: string): WechatExtendConfig {
         ? parsePositiveInt("remote_publish_connect_timeout", a.remote_publish_connect_timeout)
         : undefined,
       remote_publish_proxy_jump: a.remote_publish_proxy_jump || undefined,
+      remote_publish_password: a.remote_publish_password || undefined,
     }));
   }
 
@@ -205,12 +210,12 @@ function parseWechatExtend(content: string): WechatExtendConfig {
 
 export function loadWechatExtendConfig(): WechatExtendConfig {
   const paths = [
-    path.join(process.cwd(), ".baoyu-skills", "baoyu-post-to-wechat", "EXTEND.md"),
+    path.join(process.cwd(), ".post-to-wechat", "EXTEND.md"),
     path.join(
       process.env.XDG_CONFIG_HOME || path.join(homeDir(), ".config"),
-      "baoyu-skills", "baoyu-post-to-wechat", "EXTEND.md"
+      "post-to-wechat", "EXTEND.md"
     ),
-    path.join(homeDir(), ".baoyu-skills", "baoyu-post-to-wechat", "EXTEND.md"),
+    path.join(homeDir(), ".post-to-wechat", "EXTEND.md"),
   ];
   for (const p of paths) {
     let content: string;
@@ -236,7 +241,7 @@ export function resolveAccount(config: WechatExtendConfig, alias?: string): Reso
   return {
     name: acct?.name,
     alias: acct?.alias,
-    default_publish_method: acct?.default_publish_method ?? config.default_publish_method,
+    default_publish_method: acct?.default_publish_method ?? config.default_publish_method ?? "remote-api",
     default_author: acct?.default_author ?? config.default_author,
     need_open_comment: acct?.need_open_comment ?? config.need_open_comment ?? 1,
     only_fans_can_comment: acct?.only_fans_can_comment ?? config.only_fans_can_comment ?? 0,
@@ -252,6 +257,7 @@ export function resolveAccount(config: WechatExtendConfig, alias?: string): Reso
       acct?.remote_publish_strict_host_key_checking ?? config.remote_publish_strict_host_key_checking,
     remote_publish_connect_timeout: acct?.remote_publish_connect_timeout ?? config.remote_publish_connect_timeout,
     remote_publish_proxy_jump: acct?.remote_publish_proxy_jump ?? config.remote_publish_proxy_jump,
+    remote_publish_password: acct?.remote_publish_password ?? config.remote_publish_password,
   };
 }
 
@@ -350,14 +356,14 @@ function resolveCredentialSource(
 
   throw new Error(
     `Missing WECHAT_APP_ID or WECHAT_APP_SECRET${hint}.\n` +
-    "Set via EXTEND.md account config, environment variables, or .baoyu-skills/.env file." +
+    "Set via EXTEND.md account config, environment variables, or .post-to-wechat/.env file." +
     partialHint
   );
 }
 
 export function loadCredentials(account?: ResolvedAccount): LoadedCredentials {
-  const cwdEnvPath = path.join(process.cwd(), ".baoyu-skills", ".env");
-  const homeEnvPath = path.join(homeDir(), ".baoyu-skills", ".env");
+  const cwdEnvPath = path.join(process.cwd(), ".post-to-wechat", ".env");
+  const homeEnvPath = path.join(homeDir(), ".post-to-wechat", ".env");
   const cwdEnv = loadEnvFile(cwdEnvPath);
   const homeEnv = loadEnvFile(homeEnvPath);
 
@@ -378,15 +384,15 @@ export function loadCredentials(account?: ResolvedAccount): LoadedCredentials {
     const prefixedKeyLabel = `${prefix}APP_ID/${prefix}APP_SECRET`;
     sources.push(
       buildCredentialSource(`process.env (${prefixedKeyLabel})`, process.env, `${prefix}APP_ID`, `${prefix}APP_SECRET`),
-      buildCredentialSource(`<cwd>/.baoyu-skills/.env (${prefixedKeyLabel})`, cwdEnv, `${prefix}APP_ID`, `${prefix}APP_SECRET`),
-      buildCredentialSource(`~/.baoyu-skills/.env (${prefixedKeyLabel})`, homeEnv, `${prefix}APP_ID`, `${prefix}APP_SECRET`),
+      buildCredentialSource(`<cwd>/.post-to-wechat/.env (${prefixedKeyLabel})`, cwdEnv, `${prefix}APP_ID`, `${prefix}APP_SECRET`),
+      buildCredentialSource(`~/.post-to-wechat/.env (${prefixedKeyLabel})`, homeEnv, `${prefix}APP_ID`, `${prefix}APP_SECRET`),
     );
   }
 
   sources.push(
     buildCredentialSource("process.env", process.env, "WECHAT_APP_ID", "WECHAT_APP_SECRET"),
-    buildCredentialSource("<cwd>/.baoyu-skills/.env", cwdEnv, "WECHAT_APP_ID", "WECHAT_APP_SECRET"),
-    buildCredentialSource("~/.baoyu-skills/.env", homeEnv, "WECHAT_APP_ID", "WECHAT_APP_SECRET"),
+    buildCredentialSource("<cwd>/.post-to-wechat/.env", cwdEnv, "WECHAT_APP_ID", "WECHAT_APP_SECRET"),
+    buildCredentialSource("~/.post-to-wechat/.env", homeEnv, "WECHAT_APP_ID", "WECHAT_APP_SECRET"),
   );
 
   return resolveCredentialSource(sources, account);

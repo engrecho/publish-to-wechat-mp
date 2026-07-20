@@ -15,8 +15,8 @@ import {
   resolveContentImages,
   serializeFrontmatter,
   stripWrappingQuotes,
-} from "baoyu-md";
-import { closeRenderer, renderMermaidToPng } from "baoyu-chrome-cdp/mermaid";
+} from "wechat-md";
+import { closeRenderer, renderMermaidToPng } from "wechat-chrome-cdp/mermaid";
 
 interface ImageInfo {
   placeholder: string;

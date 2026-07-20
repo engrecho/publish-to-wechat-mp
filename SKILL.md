@@ -1,10 +1,9 @@
 ---
-name: baoyu-post-to-wechat
+name: post-to-wechat
 description: Posts content to WeChat Official Account (微信公众号) via API or Chrome CDP. Supports article posting (文章) with HTML, markdown, or plain text input, and image-text posting (贴图, formerly 图文) with multiple images. Markdown article workflows default to converting ordinary external links into bottom citations for WeChat-friendly output. Use when user mentions "发布公众号", "post to wechat", "微信公众号", or "贴图/图文/文章".
 version: 1.118.2
 metadata:
   openclaw:
-    homepage: https://github.com/JimLiu/baoyu-skills#baoyu-post-to-wechat
     requires:
       anyBins:
         - bun
@@ -45,9 +44,9 @@ Check these paths in order; first hit wins:
 
 | Path | Scope |
 |------|-------|
-| `.baoyu-skills/baoyu-post-to-wechat/EXTEND.md` | Project |
-| `${XDG_CONFIG_HOME:-$HOME/.config}/baoyu-skills/baoyu-post-to-wechat/EXTEND.md` | XDG |
-| `$HOME/.baoyu-skills/baoyu-post-to-wechat/EXTEND.md` | User home |
+| `.post-to-wechat/EXTEND.md` | Project |
+| `${XDG_CONFIG_HOME:-$HOME/.config}/post-to-wechat/EXTEND.md` | XDG |
+| `$HOME/.post-to-wechat/EXTEND.md` | User home |
 
 Found → read, parse, apply. Not found → run first-time setup (`references/config/first-time-setup.md`) before anything else.
 
@@ -64,17 +63,19 @@ Found → read, parse, apply. Not found → run first-time setup (`references/co
 ```md
 default_theme: default
 default_color: blue
-default_publish_method: browser
-default_author: 宝玉
+default_publish_method: remote-api
+default_author:
 need_open_comment: 1
 only_fans_can_comment: 0
 chrome_profile_path: /path/to/chrome/profile
 
 # Remote API publishing (optional) — only set if WeChat's IP allowlist
-# excludes your local machine. See "Remote API Method" below.
-# remote_publish_host: server.example.com
-# remote_publish_user: deploy
+# excludes your local machine. See "Remote API Method" below and references/server-setup.md.
+# remote_publish_host: 62.234.16.218
+# remote_publish_user: root
 # remote_publish_port: 22
+# remote_publish_password:
+# (填写 SSH password via sshpass — only for trusted private servers; prefer remote_publish_identity_file)
 # remote_publish_identity_file: ~/.ssh/id_ed25519
 # remote_publish_known_hosts_file: ~/.ssh/known_hosts
 # remote_publish_strict_host_key_checking: accept-new
@@ -82,7 +83,7 @@ chrome_profile_path: /path/to/chrome/profile
 # remote_publish_proxy_jump: bastion.example.com
 ```
 
-Raw `ssh` / `scp` options are intentionally not supported; only the typed keys above are honored. Authentication is SSH key only (no passwords).
+Raw `ssh` / `scp` options are intentionally not supported; only the typed keys above are honored. SSH key auth (via `remote_publish_identity_file`) is preferred for production; password auth (via `remote_publish_password` + sshpass) is supported for trusted private servers.
 
 **Theme options**: default, grace, simple, modern. **Color presets**: blue, green, vermilion, yellow, purple, sky, rose, olive, black, gray, pink, red, orange (or hex).
 
@@ -107,12 +108,13 @@ Checks: Chrome, profile isolation, Bun, Accessibility, clipboard, paste keystrok
 | Check fails | Fix |
 |-------------|-----|
 | Chrome | Install Chrome or set `WECHAT_BROWSER_CHROME_PATH` |
-| Profile dir | Shared profile at `baoyu-skills/chrome-profile` |
+| Profile dir | Shared profile at `post-to-wechat/chrome-profile` |
 | Bun runtime | `brew install oven-sh/bun/bun` or `npm install -g bun` |
 | Accessibility (macOS) | System Settings → Privacy & Security → Accessibility → enable terminal app |
 | Clipboard copy | Ensure Swift/AppKit (macOS: `xcode-select --install`) |
 | Paste keystroke (Linux) | Install `xdotool` (X11) or `ydotool` (Wayland) |
-| API credentials | Follow guided setup in Step 2, or set in `.baoyu-skills/.env` |
+| API credentials | Follow guided setup in Step 2, or set in `.post-to-wechat/.env` |
+| sshpass (password auth only) | Install: `brew install hudochenkov/sshpass/sshpass` (macOS) / `apt install sshpass` (Debian/Ubuntu) |
 
 ## Image-Text Posting (图文)
 
@@ -161,13 +163,15 @@ Ask method unless specified in EXTEND.md or CLI:
 
 | Method | Speed | Requires |
 |--------|-------|----------|
-| `api` (Recommended) | Fast | API credentials (local IP allowlisted) |
+| `remote-api` (Recommended) | Fast | API credentials + an SSH-reachable server whose IP is on the WeChat allowlist (password or SSH key auth) |
+| `api` | Fast | API credentials (local IP must be allowlisted) |
 | `browser` | Slow | Chrome + logged-in session |
-| `remote-api` | Fast | API credentials + an SSH-reachable server whose IP is on the WeChat allowlist |
 
-**API selected + missing credentials** → run guided setup per `references/api-setup.md` (writes to `.baoyu-skills/.env`).
+**`remote-api` method**: WeChat's "公众号设置 → IP 白名单" often limits API access to one or two fixed IPs. If your local machine's IP is not on that list but a cloud server's is, use `remote-api`: all markdown rendering, image processing, draft assembly, and HTML rewriting still happen locally, and only the outbound HTTPS calls to `api.weixin.qq.com` (token, uploadimg, add_material, draft/add) are tunneled through an SSH SOCKS5 dynamic port forward (`ssh -N -D`) so that WeChat sees the remote server as the source IP. No files are written to the remote host; `AppSecret` never leaves the local process. Requires only `sshd` and outbound network on the remote host — no Python, no agent process. See "Remote API Method" below. Password-based SSH auth (via sshpass) is supported for trusted private servers; prefer SSH key auth (remote_publish_identity_file) for production.
 
-**`remote-api` method**: WeChat's "公众号设置 → IP 白名单" often limits API access to one or two fixed IPs. If your local machine's IP is not on that list but a cloud server's is, use `remote-api`: all markdown rendering, image processing, draft assembly, and HTML rewriting still happen locally, and only the outbound HTTPS calls to `api.weixin.qq.com` (token, uploadimg, add_material, draft/add) are tunneled through an SSH SOCKS5 dynamic port forward (`ssh -N -D`) so that WeChat sees the remote server as the source IP. No files are written to the remote host; `AppSecret` never leaves the local process. Requires only `sshd` and outbound network on the remote host — no Python, no agent process. See "Remote API Method" below.
+**Remote API 首次配置**：参见 `references/server-setup.md` 完成微信公众号 IP 白名单（添加 `62.234.16.218`）、SSH 可达性验证、sshpass 安装。
+
+**API selected + missing credentials** → run guided setup per `references/api-setup.md` (writes to `.post-to-wechat/.env`).
 
 ### Step 3: Resolve Theme/Color and Validate Metadata
 
@@ -262,7 +266,7 @@ Files created:
 | Default cover fallback (`imgs/cover.png`) | ✗ | ✓ | ✓ | ✗ |
 | Comment control | ✗ | ✓ | ✓ | ✗ |
 | Requires Chrome | ✓ | ✗ | ✗ | ✓ |
-| Requires API credentials | ✗ | ✓ | ✓ | ✗ |
+| Requires API credentials (本机 IP allowlisted) | ✗ | ✓ | ✓ | ✗ |
 | Requires SSH-reachable server with allowlisted IP | ✗ | ✗ | ✓ | ✗ |
 | Speed | Medium | Fast | Fast | Slow |
 
@@ -282,6 +286,9 @@ Files created:
 | `SOCKS proxy on 127.0.0.1:… not ready` | SSH could not start the tunnel — check key, host, `StrictHostKeyChecking`, or use `--remote-connect-timeout` |
 | `ssh exited early` during remote publish | Verify the user can `ssh` non-interactively to the server; raise `--remote-connect-timeout` if the link is slow |
 | Remote API call returns `errcode 40164` (invalid IP) | The remote server's egress IP is not on WeChat's allowlist; add it in 公众号设置 → IP 白名单 |
+| `sshpass: command not found` | Install sshpass: `brew install hudochenkov/sshpass/sshpass` (macOS) / `apt install sshpass` (Debian/Ubuntu) |
+| Remote publish missing auth | Set `remote_publish_password` or `remote_publish_identity_file` in EXTEND.md, or use `--remote-password` / `--remote-identity-file` |
+| 旧版配置目录 (v1.x 命名) 不再读取 | 手动迁移: 将旧 `EXTEND.md` 移至 `.post-to-wechat/EXTEND.md` |
 
 ## References
 
@@ -291,6 +298,7 @@ Files created:
 | `references/article-posting.md` | Article themes, image handling |
 | `references/multi-account.md` | Multi-account compatibility, credentials, Chrome profiles, CLI |
 | `references/api-setup.md` | Guided credential setup |
+| `references/server-setup.md` | Server-side setup: IP allowlist, SSH, sshpass |
 | `references/config/first-time-setup.md` | First-time EXTEND.md setup |
 
 ## Extension Support

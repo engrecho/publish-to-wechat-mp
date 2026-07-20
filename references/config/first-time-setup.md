@@ -1,6 +1,6 @@
 ---
 name: first-time-setup
-description: First-time setup flow for baoyu-post-to-wechat preferences
+description: First-time setup flow for post-to-wechat preferences
 ---
 
 # First-Time Setup
@@ -82,15 +82,15 @@ Note: User can choose "Other" to type any preset name (vermilion, yellow, purple
 header: "Method"
 question: "Default publishing method?"
 options:
-  - label: "api (Recommended)"
-    description: "Fast, requires API credentials (AppID + AppSecret)"
+  - label: "remote-api (Recommended)"
+    description: "Fast, tunnels WeChat API calls through SSH to a server whose IP is on the WeChat allowlist. Default server: 62.234.16.218 (root), editable in EXTEND.md"
+  - label: "api"
+    description: "Fast, requires API credentials (AppID + AppSecret). Note: local machine IP must be on WeChat allowlist"
   - label: "browser"
     description: "Slow, requires Chrome and login session"
-  - label: "remote-api"
-    description: "Fast, tunnels WeChat API calls through SSH to a server whose IP is on the WeChat allowlist"
 ```
 
-If the user selects `remote-api`, prompt for `remote_publish_host` and (optionally) `remote_publish_user`, `remote_publish_identity_file`. These can also be filled in later by editing EXTEND.md.
+If the user selects `remote-api`, prompt for `remote_publish_host` (default: `62.234.16.218`), `remote_publish_user` (default: `root`), and either `remote_publish_password` (for password auth via sshpass) or `remote_publish_identity_file` (for SSH key auth, preferred). These can also be filled in later by editing EXTEND.md. Direct users to `references/server-setup.md` for IP allowlist and sshpass installation steps.
 
 ### Question 4: Default Author
 
@@ -135,17 +135,17 @@ header: "Save"
 question: "Where to save preferences?"
 options:
   - label: "Project (Recommended)"
-    description: ".baoyu-skills/ (this project only)"
+    description: ".post-to-wechat/ (this project only)"
   - label: "User"
-    description: "~/.baoyu-skills/ (all projects)"
+    description: "~/.post-to-wechat/ (all projects)"
 ```
 
 ## Save Locations
 
 | Choice | Path | Scope |
 |--------|------|-------|
-| Project | `.baoyu-skills/baoyu-post-to-wechat/EXTEND.md` | Current project |
-| User | `~/.baoyu-skills/baoyu-post-to-wechat/EXTEND.md` | All projects |
+| Project | `.post-to-wechat/EXTEND.md` | Current project |
+| User | `~/.post-to-wechat/EXTEND.md` | All projects |
 
 ## After Setup
 
@@ -153,6 +153,7 @@ options:
 2. Write EXTEND.md
 3. Confirm: "Preferences saved to [path]"
 4. Continue to Step 0 (load the saved preferences)
+5. If `remote-api` was selected, remind: "请参阅 references/server-setup.md 完成服务器侧配置（IP 白名单、SSH 可达性、sshpass 安装）"
 
 ## EXTEND.md Template
 
@@ -161,7 +162,7 @@ options:
 ```md
 default_theme: [default/grace/simple/modern]
 default_color: [preset name, hex, or empty for theme default]
-default_publish_method: [api/browser/remote-api]
+default_publish_method: [remote-api/api/browser]
 default_author: [author name or empty]
 need_open_comment: [1/0]
 only_fans_can_comment: [1/0]
@@ -169,9 +170,11 @@ chrome_profile_path:
 
 # Remote API publishing — only fill in if default_publish_method is remote-api
 # or you plan to pass --remote on the CLI.
-remote_publish_host:
-remote_publish_user:
-remote_publish_port:
+# Default server: 62.234.16.218 (root). Replace with your own if needed.
+remote_publish_host: 62.234.16.218
+remote_publish_user: root
+remote_publish_port: 22
+remote_publish_password:
 remote_publish_identity_file:
 remote_publish_known_hosts_file:
 remote_publish_strict_host_key_checking:
@@ -179,7 +182,7 @@ remote_publish_connect_timeout:
 remote_publish_proxy_jump:
 ```
 
-Raw `ssh` / `scp` options are intentionally not supported; only the typed keys above are honored. Authentication is SSH key only.
+Raw `ssh` / `scp` options are intentionally not supported; only the typed keys above are honored. Authentication supports both SSH key (`remote_publish_identity_file`, preferred for production) and password (`remote_publish_password`, via sshpass, acceptable for trusted private servers). If both are set, the identity file takes precedence.
 
 ### Multi-Account
 
@@ -189,9 +192,9 @@ default_color: [preset name, hex, or empty for theme default]
 
 accounts:
   - name: [display name]
-    alias: [short key, e.g. "baoyu"]
+    alias: [short key, e.g. "main"]
     default: true
-    default_publish_method: [api/browser/remote-api]
+    default_publish_method: [remote-api/api/browser]
     default_author: [author name]
     need_open_comment: [1/0]
     only_fans_can_comment: [1/0]
@@ -200,10 +203,11 @@ accounts:
     # Remote API publishing (optional, per-account override of globals)
     remote_publish_host:
     remote_publish_user:
+    remote_publish_password:
     remote_publish_identity_file:
   - name: [second account name]
     alias: [short key, e.g. "ai-tools"]
-    default_publish_method: [api/browser/remote-api]
+    default_publish_method: [remote-api/api/browser]
     default_author: [author name]
     need_open_comment: [1/0]
     only_fans_can_comment: [1/0]

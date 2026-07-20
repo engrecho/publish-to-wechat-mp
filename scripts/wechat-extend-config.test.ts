@@ -72,13 +72,13 @@ async function makeTempDir(prefix: string): Promise<string> {
 }
 
 async function writeEnvFile(root: string, content: string): Promise<void> {
-  const envPath = path.join(root, ".baoyu-skills", ".env");
+  const envPath = path.join(root, ".post-to-wechat", ".env");
   await fs.mkdir(path.dirname(envPath), { recursive: true });
   await fs.writeFile(envPath, content);
 }
 
 async function writeExtendFile(root: string, content: string): Promise<void> {
-  const extendPath = path.join(root, ".baoyu-skills", "baoyu-post-to-wechat", "EXTEND.md");
+  const extendPath = path.join(root, ".post-to-wechat", "EXTEND.md");
   await fs.mkdir(path.dirname(extendPath), { recursive: true });
   await fs.writeFile(extendPath, content);
 }
@@ -117,7 +117,7 @@ test("loadCredentials selects the first complete source without mixing values ac
 
   assert.equal(credentials.appId, "cwd-app-id");
   assert.equal(credentials.appSecret, "cwd-app-secret");
-  assert.equal(credentials.source, "<cwd>/.baoyu-skills/.env");
+  assert.equal(credentials.source, "<cwd>/.post-to-wechat/.env");
   assert.deepEqual(credentials.skippedSources, [
     "process.env missing WECHAT_APP_ID",
   ]);
@@ -303,6 +303,67 @@ test("loadCredentials reports skipped incomplete sources when no complete pair e
 
   assert.throws(
     () => loadCredentials(),
-    /Incomplete credential sources skipped:\n- process\.env missing WECHAT_APP_SECRET\n- <cwd>\/\.baoyu-skills\/\.env missing WECHAT_APP_ID/,
+    /Incomplete credential sources skipped:\n- process\.env missing WECHAT_APP_SECRET\n- <cwd>\/\.post-to-wechat\/\.env missing WECHAT_APP_ID/,
   );
+});
+
+test("resolveAccount merges remote_publish_password from account level over global", async (t) => {
+  const cwdRoot = await makeTempDir("wechat-extend-cwd-");
+  const homeRoot = await makeTempDir("wechat-extend-home-");
+
+  useCwd(t, cwdRoot);
+  useHome(t, homeRoot);
+  useXdgConfigHome(t, undefined);
+
+  await writeExtendFile(
+    cwdRoot,
+    [
+      "remote_publish_password: global-password",
+      "accounts:",
+      "  - name: Primary",
+      "    alias: primary",
+      "    default: true",
+      "    remote_publish_password: account-password",
+      "  - name: Secondary",
+      "    alias: secondary",
+    ].join("\n"),
+  );
+
+  const config = loadWechatExtendConfig();
+  const primary = resolveAccount(config, "primary");
+  assert.equal(primary.remote_publish_password, "account-password");
+
+  const secondary = resolveAccount(config, "secondary");
+  assert.equal(secondary.remote_publish_password, "global-password");
+});
+
+test("resolveAccount defaults default_publish_method to remote-api when not configured", async (t) => {
+  const cwdRoot = await makeTempDir("wechat-extend-cwd-");
+  const homeRoot = await makeTempDir("wechat-extend-home-");
+
+  useCwd(t, cwdRoot);
+  useHome(t, homeRoot);
+  useXdgConfigHome(t, undefined);
+
+  // EXTEND.md with no default_publish_method set at all
+  await writeExtendFile(cwdRoot, "default_theme: default\n");
+
+  const config = loadWechatExtendConfig();
+  const resolved = resolveAccount(config);
+  assert.equal(resolved.default_publish_method, "remote-api");
+});
+
+test("resolveAccount respects explicit api default_publish_method", async (t) => {
+  const cwdRoot = await makeTempDir("wechat-extend-cwd-");
+  const homeRoot = await makeTempDir("wechat-extend-home-");
+
+  useCwd(t, cwdRoot);
+  useHome(t, homeRoot);
+  useXdgConfigHome(t, undefined);
+
+  await writeExtendFile(cwdRoot, "default_publish_method: api\n");
+
+  const config = loadWechatExtendConfig();
+  const resolved = resolveAccount(config);
+  assert.equal(resolved.default_publish_method, "api");
 });

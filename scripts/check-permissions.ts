@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { findChromeExecutable, getDefaultProfileDir } from './cdp.ts';
+import { loadWechatExtendConfig, resolveAccount } from './wechat-extend-config.ts';
 
 interface CheckResult {
   name: string;
@@ -187,8 +188,8 @@ async function checkBun(): Promise<void> {
 
 async function checkApiCredentials(): Promise<void> {
   const cwd = process.cwd();
-  const projectEnv = path.join(cwd, '.baoyu-skills', '.env');
-  const userEnv = path.join(os.homedir(), '.baoyu-skills', '.env');
+  const projectEnv = path.join(cwd, '.post-to-wechat', '.env');
+  const userEnv = path.join(os.homedir(), '.post-to-wechat', '.env');
 
   let found = false;
   for (const envPath of [projectEnv, userEnv]) {
@@ -207,6 +208,33 @@ async function checkApiCredentials(): Promise<void> {
   }
 }
 
+async function checkSshpass(): Promise<void> {
+  let resolved;
+  try {
+    const config = loadWechatExtendConfig();
+    resolved = resolveAccount(config);
+  } catch {
+    // EXTEND.md not configured yet — skip sshpass detection
+    return;
+  }
+
+  if (!resolved.remote_publish_password) {
+    // No password configured — skip detection (user may use identity_file instead)
+    return;
+  }
+
+  const result = spawnSync('which', ['sshpass'], { stdio: 'pipe' });
+  if (result.status === 0) {
+    const sshpassPath = result.stdout?.toString().trim();
+    log('sshpass (password auth)', true, `Found at ${sshpassPath}`);
+  } else {
+    warn(
+      'sshpass (password auth)',
+      'Not found. Install: brew install hudochenkov/sshpass/sshpass (macOS) / apt install sshpass (Debian/Ubuntu). Or use remote_publish_identity_file instead.',
+    );
+  }
+}
+
 async function checkRunningChromeConflict(): Promise<void> {
   if (process.platform !== 'darwin') return;
 
@@ -221,7 +249,7 @@ async function checkRunningChromeConflict(): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  console.log('=== baoyu-post-to-wechat: Permission & Environment Check ===\n');
+  console.log('=== post-to-wechat: Permission & Environment Check ===\n');
 
   await checkChrome();
   await checkProfileIsolation();
@@ -230,6 +258,7 @@ async function main(): Promise<void> {
   await checkClipboardCopy();
   await checkPasteKeystroke();
   await checkApiCredentials();
+  await checkSshpass();
   await checkRunningChromeConflict();
 
   console.log('\n--- Summary ---');
