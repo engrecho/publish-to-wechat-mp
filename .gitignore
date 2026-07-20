@@ -1,5 +1,7 @@
-# 排除 agent 配置文件(含本地敏感信息)
+# 排除 agent 配置文件(含本地敏感信息: token/密码/API key)
+AGENTS.md
 agent.md
+AGENTS.md.local
 
 # 依赖
 node_modules/
