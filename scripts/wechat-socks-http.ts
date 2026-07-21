@@ -104,7 +104,7 @@ async function sendRequestAndReadResponse(
   }
   if (!headerMap.has("host")) headerMap.set("host", `Host: ${url.host}`);
   if (!headerMap.has("user-agent")) {
-    headerMap.set("user-agent", "User-Agent: baoyu-skills-wechat-api");
+    headerMap.set("user-agent", "User-Agent: post-to-wechat-api");
   }
   headerMap.set("connection", "Connection: close");
   if (body && !headerMap.has("content-length")) {

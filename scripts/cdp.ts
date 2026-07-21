@@ -12,7 +12,7 @@ import {
   sleep,
   waitForChromeDebugPort,
   type PlatformCandidates,
-} from 'baoyu-chrome-cdp';
+} from 'wechat-chrome-cdp';
 
 export { CdpConnection, sleep, waitForChromeDebugPort };
 
@@ -76,7 +76,7 @@ export function findChromeExecutable(chromePathOverride?: string): string | unde
 
 export function getDefaultProfileDir(): string {
   return resolveSharedChromeProfileDir({
-    envNames: ['BAOYU_CHROME_PROFILE_DIR', 'WECHAT_BROWSER_PROFILE_DIR'],
+    envNames: ['WECHAT_BROWSER_PROFILE_DIR'],
     wslWindowsHome: getWslWindowsHome(),
   });
 }

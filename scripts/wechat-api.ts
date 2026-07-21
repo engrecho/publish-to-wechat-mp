@@ -497,6 +497,7 @@ Options:
   --remote-strict-host-key-checking <yes|no|accept-new> (implies --remote)
   --remote-connect-timeout <seconds>   SSH ConnectTimeout (implies --remote)
   --remote-proxy-jump <spec>           SSH ProxyJump value (implies --remote)
+  --remote-password <pw>               SSH password (via sshpass, implies --remote). Use only on trusted private servers.
   --help              Show this help
 
 Frontmatter Fields (markdown):
@@ -515,8 +516,8 @@ Environment Variables:
 
 Config File Locations (in priority order):
   1. Environment variables
-  2. <cwd>/.baoyu-skills/.env
-  3. ~/.baoyu-skills/.env
+  2. <cwd>/.post-to-wechat/.env
+  3. ~/.post-to-wechat/.env
 
 Example:
   npx -y bun wechat-api.ts article.md
@@ -553,6 +554,7 @@ interface CliArgs {
   remoteStrictHostKeyChecking?: StrictHostKeyChecking;
   remoteConnectTimeout?: number;
   remoteProxyJump?: string;
+  remotePassword?: string;
 }
 
 function parseArgs(argv: string[]): CliArgs {
@@ -640,6 +642,9 @@ function parseArgs(argv: string[]): CliArgs {
     } else if (arg === "--remote-proxy-jump" && argv[i + 1]) {
       args.remoteProxyJump = argv[++i];
       args.remote = true;
+    } else if (arg === "--remote-password" && argv[i + 1]) {
+      args.remotePassword = argv[++i];
+      args.remote = true;
     } else if (arg.startsWith("--") && argv[i + 1] && !argv[i + 1]!.startsWith("-")) {
       i++;
     } else if (!arg.startsWith("-")) {
@@ -683,6 +688,7 @@ function buildRemoteConfig(args: CliArgs, resolved: ResolvedAccount): RemotePubl
       args.remoteStrictHostKeyChecking ?? resolved.remote_publish_strict_host_key_checking,
     connectTimeout: args.remoteConnectTimeout ?? resolved.remote_publish_connect_timeout,
     proxyJump: args.remoteProxyJump ?? resolved.remote_publish_proxy_jump,
+    password: args.remotePassword ?? resolved.remote_publish_password,
   };
 }
 

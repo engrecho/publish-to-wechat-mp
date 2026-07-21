@@ -15,6 +15,7 @@ export interface RemotePublishConfig {
   strictHostKeyChecking?: StrictHostKeyChecking;
   connectTimeout?: number;
   proxyJump?: string;
+  password?: string;
 }
 
 export interface NormalizedRemotePublishConfig {
@@ -26,6 +27,7 @@ export interface NormalizedRemotePublishConfig {
   strictHostKeyChecking?: StrictHostKeyChecking;
   connectTimeout?: number;
   proxyJump?: string;
+  password?: string;
 }
 
 export interface SshTunnel {
@@ -79,6 +81,7 @@ export function normalizeRemoteConfig(config: RemotePublishConfig): NormalizedRe
     strictHostKeyChecking: config.strictHostKeyChecking,
     connectTimeout: config.connectTimeout,
     proxyJump: config.proxyJump,
+    password: config.identityFile ? undefined : config.password,
   };
 }
 
@@ -171,6 +174,42 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+export interface SshInvocation {
+  command: string;
+  args: string[];
+  logPrefix: string;
+}
+
+export function buildSshInvocation(
+  config: NormalizedRemotePublishConfig,
+  socksPort: number,
+): SshInvocation {
+  if (!config.identityFile && !config.password) {
+    throw new Error(
+      "Remote publish requires either remote_publish_password or remote_publish_identity_file " +
+      "(set in EXTEND.md or via --remote-password / --remote-identity-file).",
+    );
+  }
+
+  const sshArgs = buildSshArgs(config, socksPort);
+
+  // identityFile takes precedence over password (defensive: works even if
+  // caller bypassed normalizeRemoteConfig).
+  if (config.identityFile) {
+    return {
+      command: "ssh",
+      args: sshArgs,
+      logPrefix: "ssh",
+    };
+  }
+
+  return {
+    command: "sshpass",
+    args: ["-p", config.password!, "ssh", ...sshArgs],
+    logPrefix: "sshpass -p *** ssh",
+  };
+}
+
 export async function startSshTunnel(
   config: NormalizedRemotePublishConfig,
   options: StartSshTunnelOptions = {},
@@ -179,10 +218,10 @@ export async function startSshTunnel(
   const killTimeout = options.killTimeoutMs ?? DEFAULT_KILL_TIMEOUT_MS;
 
   const port = await findFreePort();
-  const args = buildSshArgs(config, port);
+  const invocation = buildSshInvocation(config, port);
 
-  console.error(`[wechat-remote-publish] Starting SSH SOCKS5 tunnel: ssh ${args.join(" ")}`);
-  const child = spawn("ssh", args, {
+  console.error(`[wechat-remote-publish] Starting SSH SOCKS5 tunnel: ${invocation.logPrefix} ${buildSshArgs(config, port).join(" ")}`);
+  const child = spawn(invocation.command, invocation.args, {
     stdio: ["ignore", "pipe", "pipe"],
   }) as ChildProcessByStdio<null, Readable, Readable>;
 

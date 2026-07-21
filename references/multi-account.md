@@ -18,15 +18,18 @@ default_theme: default
 default_color: blue
 
 accounts:
-  - name: 宝玉的技术分享
-    alias: baoyu
+  - name: 主账号
+    alias: main
     default: true
-    default_publish_method: api
-    default_author: 宝玉
+    default_publish_method: remote-api
+    default_author:
     need_open_comment: 1
     only_fans_can_comment: 0
     app_id: your_wechat_app_id
     app_secret: your_wechat_app_secret
+    remote_publish_host: 62.234.16.218
+    remote_publish_user: root
+    remote_publish_password: your_ssh_password
   - name: AI工具集
     alias: ai-tools
     default_publish_method: browser
@@ -37,7 +40,7 @@ accounts:
 
 ## Per-Account vs Global Keys
 
-**Per-account** (also accepted globally as fallback): `default_publish_method`, `default_author`, `need_open_comment`, `only_fans_can_comment`, `app_id`, `app_secret`, `chrome_profile_path`, `remote_publish_host`, `remote_publish_user`, `remote_publish_port`, `remote_publish_identity_file`, `remote_publish_known_hosts_file`, `remote_publish_strict_host_key_checking`, `remote_publish_connect_timeout`, `remote_publish_proxy_jump`.
+**Per-account** (also accepted globally as fallback): `default_publish_method`, `default_author`, `need_open_comment`, `only_fans_can_comment`, `app_id`, `app_secret`, `chrome_profile_path`, `remote_publish_host`, `remote_publish_user`, `remote_publish_port`, `remote_publish_password`, `remote_publish_identity_file`, `remote_publish_known_hosts_file`, `remote_publish_strict_host_key_checking`, `remote_publish_connect_timeout`, `remote_publish_proxy_jump`.
 
 **Global-only** (always shared): `default_theme`, `default_color`.
 
@@ -64,16 +67,16 @@ For the selected account with alias `{alias}`, try in this order (first hit wins
 
 1. `app_id` / `app_secret` inline in the EXTEND.md account block
 2. Env vars `WECHAT_{ALIAS}_APP_ID` / `WECHAT_{ALIAS}_APP_SECRET` (alias uppercased, hyphens → underscores)
-3. `.baoyu-skills/.env` with the prefixed key `WECHAT_{ALIAS}_APP_ID`
-4. `~/.baoyu-skills/.env` with the prefixed key
+3. `.post-to-wechat/.env` with the prefixed key `WECHAT_{ALIAS}_APP_ID`
+4. `~/.post-to-wechat/.env` with the prefixed key
 5. Fallback to unprefixed `WECHAT_APP_ID` / `WECHAT_APP_SECRET`
 
 ### .env Multi-Account Example
 
 ```bash
-# Account: baoyu
-WECHAT_BAOYU_APP_ID=your_wechat_app_id
-WECHAT_BAOYU_APP_SECRET=your_wechat_app_secret
+# Account: main
+WECHAT_MAIN_APP_ID=your_wechat_app_id
+WECHAT_MAIN_APP_SECRET=your_wechat_app_secret
 
 # Account: ai-tools
 WECHAT_AI_TOOLS_APP_ID=your_ai_tools_wechat_app_id
@@ -96,8 +99,8 @@ All publishing scripts accept `--account <alias>`:
 
 ```bash
 ${BUN_X} {baseDir}/scripts/wechat-api.ts <file> --theme default --account ai-tools
-${BUN_X} {baseDir}/scripts/wechat-article.ts --markdown <file> --theme default --account baoyu
-${BUN_X} {baseDir}/scripts/wechat-browser.ts --markdown <file> --images ./photos/ --account baoyu
+${BUN_X} {baseDir}/scripts/wechat-article.ts --markdown <file> --theme default --account main
+${BUN_X} {baseDir}/scripts/wechat-browser.ts --markdown <file> --images ./photos/ --account main
 ```
 
 ## Remote API Publishing
@@ -112,13 +115,16 @@ default_color: blue
 default_publish_method: browser   # browser remains the default
 
 accounts:
-  - name: 宝玉的技术分享
-    alias: baoyu
+  - name: 主账号
+    alias: main
     default: true
-    default_publish_method: api
-    default_author: 宝玉
+    default_publish_method: remote-api
+    default_author:
     app_id: your_wechat_app_id
     app_secret: your_wechat_app_secret
+    remote_publish_host: 62.234.16.218
+    remote_publish_user: root
+    remote_publish_password: your_ssh_password
   - name: AI工具集
     alias: ai-tools
     default_publish_method: remote-api
@@ -142,11 +148,12 @@ Account-level `remote_publish_*` values override top-level globals. CLI `--remot
 ${BUN_X} {baseDir}/scripts/wechat-api.ts <file> --theme default --account ai-tools
 
 # Force remote mode regardless of default_publish_method:
-${BUN_X} {baseDir}/scripts/wechat-api.ts <file> --theme default --account baoyu --remote --remote-host other-server.example.com
+${BUN_X} {baseDir}/scripts/wechat-api.ts <file> --theme default --account main --remote --remote-host other-server.example.com
 ```
 
 ### Security Notes
 
-- Authentication is SSH key only. Passwords and `ssh-askpass` are not used.
+- Authentication supports both SSH keys (`remote_publish_identity_file`) and passwords (`remote_publish_password`, via `sshpass`). SSH keys are preferred for production; passwords are acceptable only for trusted private servers.
 - Only the typed `remote_publish_*` keys are read; raw `ssh` / `scp` options are intentionally not supported.
 - The tunnel forwards raw TCP; TLS verification for `api.weixin.qq.com` is still performed end-to-end by the local process.
+- Passwords are never written to logs, error messages, or stdout. If both `remote_publish_identity_file` and `remote_publish_password` are set, the identity file takes precedence and the password is ignored.
