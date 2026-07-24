@@ -24,6 +24,9 @@ export interface WechatAccount {
   remote_publish_connect_timeout?: number;
   remote_publish_proxy_jump?: string;
   remote_publish_password?: string;
+  server_publish_url?: string;
+  server_publish_token?: string;
+  server_publish_timeout?: number;
 }
 
 export interface WechatExtendConfig {
@@ -43,6 +46,9 @@ export interface WechatExtendConfig {
   remote_publish_connect_timeout?: number;
   remote_publish_proxy_jump?: string;
   remote_publish_password?: string;
+  server_publish_url?: string;
+  server_publish_token?: string;
+  server_publish_timeout?: number;
   accounts?: WechatAccount[];
 }
 
@@ -65,6 +71,9 @@ export interface ResolvedAccount {
   remote_publish_connect_timeout?: number;
   remote_publish_proxy_jump?: string;
   remote_publish_password?: string;
+  server_publish_url?: string;
+  server_publish_token?: string;
+  server_publish_timeout?: number;
 }
 
 function stripQuotes(s: string): string {
@@ -172,6 +181,9 @@ function parseWechatExtend(content: string): WechatExtendConfig {
       case "remote_publish_connect_timeout": config.remote_publish_connect_timeout = parsePositiveInt("remote_publish_connect_timeout", val); break;
       case "remote_publish_proxy_jump": config.remote_publish_proxy_jump = val; break;
       case "remote_publish_password": config.remote_publish_password = val; break;
+      case "server_publish_url": config.server_publish_url = val; break;
+      case "server_publish_token": config.server_publish_token = val; break;
+      case "server_publish_timeout": config.server_publish_timeout = parsePositiveInt("server_publish_timeout", val); break;
     }
   }
 
@@ -202,6 +214,9 @@ function parseWechatExtend(content: string): WechatExtendConfig {
         : undefined,
       remote_publish_proxy_jump: a.remote_publish_proxy_jump || undefined,
       remote_publish_password: a.remote_publish_password || undefined,
+      server_publish_url: a.server_publish_url || undefined,
+      server_publish_token: a.server_publish_token || undefined,
+      server_publish_timeout: a.server_publish_timeout ? parsePositiveInt("server_publish_timeout", a.server_publish_timeout) : undefined,
     }));
   }
 
@@ -258,6 +273,9 @@ export function resolveAccount(config: WechatExtendConfig, alias?: string): Reso
     remote_publish_connect_timeout: acct?.remote_publish_connect_timeout ?? config.remote_publish_connect_timeout,
     remote_publish_proxy_jump: acct?.remote_publish_proxy_jump ?? config.remote_publish_proxy_jump,
     remote_publish_password: acct?.remote_publish_password ?? config.remote_publish_password,
+    server_publish_url: acct?.server_publish_url ?? config.server_publish_url,
+    server_publish_token: acct?.server_publish_token ?? config.server_publish_token,
+    server_publish_timeout: acct?.server_publish_timeout ?? config.server_publish_timeout,
   };
 }
 

@@ -21,6 +21,7 @@ import {
   normalizeRemoteConfig,
   withSshTunnel,
 } from "./wechat-remote-publish.ts";
+import { createServerApiClient } from "./wechat-server-publish.ts";
 
 interface AccessTokenResponse {
   access_token?: string;
@@ -811,7 +812,8 @@ async function main(): Promise<void> {
   const needNewsCoverFallback = args.articleType === "news" && !coverPath;
 
   const useRemote = args.remote || resolved.default_publish_method === "remote-api";
-  const method = useRemote ? "remote-api" : "api";
+  const useServerApi = !args.remote && resolved.default_publish_method === "server-api";
+  const method = useServerApi ? "server-api" : useRemote ? "remote-api" : "api";
 
   const publishWith = async (client: WechatClient): Promise<void> => {
     console.error("[wechat-api] Fetching access token...");
@@ -874,7 +876,25 @@ async function main(): Promise<void> {
     console.error(`[wechat-api] Published successfully! media_id: ${result.media_id}`);
   };
 
-  if (useRemote) {
+  if (useServerApi) {
+    const serverUrl = resolved.server_publish_url;
+    const serverToken = resolved.server_publish_token;
+    if (!serverUrl || !serverToken) {
+      throw new Error(
+        "Server API publishing requires server_publish_url and server_publish_token " +
+        "(set in EXTEND.md). Example:\n" +
+        "  server_publish_url: https://your-server.com\n" +
+        "  server_publish_token: your-token",
+      );
+    }
+    console.error(`[wechat-api] Server API publishing via ${serverUrl}`);
+    const serverClient = createServerApiClient({
+      url: serverUrl,
+      token: serverToken,
+      timeout: resolved.server_publish_timeout,
+    });
+    await publishWith(serverClient);
+  } else if (useRemote) {
     const remoteConfig = normalizeRemoteConfig(buildRemoteConfig(args, resolved));
     console.error(
       `[wechat-api] Remote publishing via ${remoteConfig.user}@${remoteConfig.host}:${remoteConfig.port}`,
