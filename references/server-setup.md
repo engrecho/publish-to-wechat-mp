@@ -1,51 +1,51 @@
-# Server Setup for Remote API Publishing
+# 远程 API 发布的服务器设置
 
-This guide covers the one-time server-side setup required when using `default_publish_method: remote-api`. All WeChat API HTTPS calls will egress from the configured server's IP, so WeChat's IP allowlist must include that IP.
+本指南涵盖使用 `default_publish_method: remote-api` 时所需的服务器侧一次性设置。所有微信 API 的 HTTPS 调用将从配置的服务器的 IP 出口发出，因此微信的 IP 白名单必须包含该 IP。
 
-The default server assumed by this skill is `62.234.16.218` (Tencent Cloud, root user). Replace with your own server if needed.
+此技能默认使用的服务器是 `62.234.16.218`（腾讯云，root 用户）。如有需要可替换为你自己的服务器。
 
-## WeChat IP Allowlist
+## 微信 IP 白名单
 
-WeChat's Official Account API rejects calls from IPs not on its allowlist with `errcode 40164`. Add the server's egress IP before using `remote-api`:
+微信公众号 API 会拒绝来自不在白名单上的 IP 的请求，返回 `errcode 40164`。在使用 `remote-api` 之前，请添加服务器的出口 IP：
 
-1. Log in to https://mp.weixin.qq.com
-2. Go to 设置与开发 → 基本配置 (Basic Configuration)
-3. Find "IP 白名单" (IP Allowlist)
-4. Add `62.234.16.218` (or your server's egress IP)
-5. Save
+1. 登录 https://mp.weixin.qq.com
+2. 进入 设置与开发 → 基本配置
+3. 找到"IP 白名单"
+4. 添加 `62.234.16.218`（或你服务器的出口 IP）
+5. 保存
 
-To verify the server's egress IP (in case it differs from the public IP):
+如需验证服务器的出口 IP（以防与公网 IP 不同）：
 ```bash
 ssh root@62.234.16.218 'curl -s https://ifconfig.me'
 ```
 
-## Verify SSH Reachability
+## 验证 SSH 可达性
 
-The local machine must be able to SSH into the server non-interactively (for password auth, `sshpass` handles the prompt; for key auth, the key must be in `ssh-agent` or unencrypted).
+本机必须能以非交互方式 SSH 到服务器（密码认证方式下，`sshpass` 处理交互提示；密钥认证方式下，密钥必须在 `ssh-agent` 中或未加密）。
 
-Quick check:
+快速检查：
 ```bash
 ssh root@62.234.16.218 'echo ok'
 ```
 
-If this hangs or fails, fix SSH connectivity before proceeding.
+如果挂起或失败，请先修复 SSH 连接问题再继续。
 
-## Install sshpass (if using password auth)
+## 安装 sshpass（如使用密码认证）
 
-`remote-api` mode supports two SSH auth methods:
+`remote-api` 模式支持两种 SSH 认证方式：
 
-- **SSH key** (recommended for production): set `remote_publish_identity_file` in EXTEND.md. No extra tools needed.
-- **Password** (acceptable for trusted private servers): set `remote_publish_password` in EXTEND.md. Requires `sshpass` installed locally.
+- **SSH 密钥**（生产环境推荐）：在 EXTEND.md 中设置 `remote_publish_identity_file`。无需额外工具。
+- **密码**（受信任的私有服务器可用）：在 EXTEND.md 中设置 `remote_publish_password`。需要本机安装 `sshpass`。
 
 ### macOS
 
-`sshpass` is not in the default Homebrew tap due to security concerns. Install via third-party tap:
+由于安全考虑，`sshpass` 不在默认的 Homebrew tap 中。请通过第三方 tap 安装：
 
 ```bash
 brew install hudochenkov/sshpass/sshpass
 ```
 
-Verify:
+验证：
 ```bash
 sshpass -V
 ```
@@ -57,15 +57,15 @@ sudo apt update && sudo apt install -y sshpass
 sshpass -V
 ```
 
-### Other Linux
+### 其他 Linux 发行版
 
-Most distributions package `sshpass`. Use your package manager (`yum`, `dnf`, `pacman`, etc.).
+大多数发行版都有 `sshpass` 包。使用你系统的包管理器（`yum`、`dnf`、`pacman` 等）。
 
-## Configure EXTEND.md
+## 配置 EXTEND.md
 
-After completing the steps above, edit `.post-to-wechat/EXTEND.md` (project) or `~/.post-to-wechat/EXTEND.md` (user):
+完成上述步骤后，编辑 `.post-to-wechat/EXTEND.md`（项目级）或 `~/.post-to-wechat/EXTEND.md`（用户级）：
 
-### Password auth (quick start)
+### 密码认证（快速开始）
 
 ```md
 default_publish_method: remote-api
@@ -74,15 +74,15 @@ remote_publish_user: root
 remote_publish_password: your_ssh_password
 ```
 
-### SSH key auth (recommended for production)
+### SSH 密钥认证（生产环境推荐）
 
-First, set up key-based SSH access:
+首先，配置基于密钥的 SSH 访问：
 ```bash
 ssh-keygen -t ed25519 -f ~/.ssh/id_tencent -N ''
 ssh-copy-id -i ~/.ssh/id_tencent.pub root@62.234.16.218
 ```
 
-Then configure:
+然后配置：
 ```md
 default_publish_method: remote-api
 remote_publish_host: 62.234.16.218
@@ -91,25 +91,25 @@ remote_publish_identity_file: ~/.ssh/id_tencent
 remote_publish_strict_host_key_checking: accept-new
 ```
 
-If both `remote_publish_password` and `remote_publish_identity_file` are set, the identity file takes precedence and the password is ignored.
+如果同时设置了 `remote_publish_password` 和 `remote_publish_identity_file`，身份文件优先，密码被忽略。
 
-## Security Notes
+## 安全注意事项
 
-- **Password auth is acceptable only for trusted private servers.** The password is stored in plaintext in EXTEND.md — never commit it to git. Prefer the user-level config (`~/.post-to-wechat/EXTEND.md`) outside the repo, or use SSH keys.
-- **SSH keys are recommended for production.** Generate a dedicated key per server, use `ssh-keygen` with a passphrase (and `ssh-agent`), and rotate periodically.
-- **The SSH tunnel forwards raw TCP only.** TLS verification for `api.weixin.qq.com` is still performed end-to-end by the local process; the server cannot intercept or decrypt WeChat API traffic.
-- **AppSecret never leaves the local process.** The server only sees encrypted TLS bytes destined for `api.weixin.qq.com`.
-- **Add `.post-to-wechat/` to `.gitignore`** if using project-level config with passwords:
+- **密码认证仅适用于受信任的私有服务器。** 密码以明文形式存储在 EXTEND.md 中 — 切勿提交到 git。推荐使用仓库外的用户级配置（`~/.post-to-wechat/EXTEND.md`），或使用 SSH 密钥。
+- **生产环境推荐使用 SSH 密钥。** 每个服务器生成专用密钥，使用带密码的 `ssh-keygen`（和 `ssh-agent`），并定期轮换。
+- **SSH 隧道仅转发原始 TCP。** 对 `api.weixin.qq.com` 的 TLS 验证仍由本地进程端到端执行；服务器无法拦截或解密微信 API 流量。
+- **AppSecret 不会离开本地进程。** 服务器只看到发往 `api.weixin.qq.com` 的加密 TLS 字节。
+- **如使用含密码的项目级配置，请将 `.post-to-wechat/` 添加到 `.gitignore`**：
   ```
   .post-to-wechat/
   ```
 
-## Troubleshooting
+## 故障排除
 
-| Issue | Fix |
+| 问题 | 修复方法 |
 |-------|-----|
-| `errcode 40164` (invalid IP) | The server's egress IP is not on WeChat's allowlist. Add it in 公众号设置 → 基本配置 → IP 白名单. Verify egress IP with `ssh root@62.234.16.218 'curl -s https://ifconfig.me'`. |
-| `Permission denied (password)` | Wrong password, or password auth disabled on server. Verify with `ssh root@62.234.16.218`. Check `/etc/ssh/sshd_config` for `PasswordAuthentication yes`. |
-| `sshpass: command not found` | Install sshpass: `brew install hudochenkov/sshpass/sshpass` (macOS) / `apt install sshpass` (Debian/Ubuntu). Or switch to `remote_publish_identity_file`. |
-| `SOCKS proxy on 127.0.0.1:... not ready` | SSH could not establish the tunnel. Check host reachability, credentials, and `StrictHostKeyChecking`. Raise `remote_publish_connect_timeout` if the link is slow. |
-| `Remote publish requires either remote_publish_password or remote_publish_identity_file` | Neither auth method is configured. Set one of them in EXTEND.md or via `--remote-password` / `--remote-identity-file` CLI flags. |
+| `errcode 40164`（IP 无效） | 服务器的出口 IP 不在微信白名单上。在公众号设置 → 基本配置 → IP 白名单 中添加。用 `ssh root@62.234.16.218 'curl -s https://ifconfig.me'` 验证出口 IP。 |
+| `Permission denied (password)` | 密码错误，或服务器禁用了密码认证。用 `ssh root@62.234.16.218` 验证。检查 `/etc/ssh/sshd_config` 中的 `PasswordAuthentication yes`。 |
+| `sshpass: command not found` | 安装 sshpass：`brew install hudochenkov/sshpass/sshpass`（macOS）/ `apt install sshpass`（Debian/Ubuntu）。或改用 `remote_publish_identity_file`。 |
+| `SOCKS proxy on 127.0.0.1:... not ready` | SSH 无法建立隧道。检查主机可达性、凭据和 `StrictHostKeyChecking`。如果链路较慢，提高 `remote_publish_connect_timeout`。 |
+| `Remote publish requires either remote_publish_password or remote_publish_identity_file` | 两种认证方式都未配置。在 EXTEND.md 中设置其中之一，或通过 `--remote-password` / `--remote-identity-file` CLI 标志传入。 |

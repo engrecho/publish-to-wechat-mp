@@ -1,71 +1,71 @@
 ---
 name: first-time-setup
-description: First-time setup flow for post-to-wechat preferences
+description: post-to-wechat 偏好设置的首次设置流程
 ---
 
-# First-Time Setup
+# 首次设置
 
-## Overview
+## 概述
 
-When no EXTEND.md is found, guide user through preference setup.
+当找不到 EXTEND.md 时，引导用户完成偏好设置。
 
-**BLOCKING OPERATION**: This setup MUST complete before ANY other workflow steps. Do NOT:
-- Ask about content or files to publish
-- Ask about themes or publishing methods
-- Proceed to content conversion or publishing
+**阻塞性操作**：此设置必须在其他任何工作流步骤之前完成。不得：
+- 询问要发布的内容或文件
+- 询问主题或发布方式
+- 继续执行内容转换或发布
 
-ONLY ask the questions in this setup flow, save EXTEND.md, then continue.
+仅提问本设置流程中的问题，保存 EXTEND.md，然后继续。
 
-## Setup Flow
+## 设置流程
 
 ```
-No EXTEND.md found
+未找到 EXTEND.md
         |
         v
 +---------------------+
 | AskUserQuestion     |
-| (all questions)     |
+| （所有问题）         |
 +---------------------+
         |
         v
 +---------------------+
-| Create EXTEND.md    |
+| 创建 EXTEND.md      |
 +---------------------+
         |
         v
-    Continue to Step 1
+    继续到步骤 1
 ```
 
-## Questions
+## 问题
 
-**Language**: Use user's input language or saved language preference.
+**语言**：使用用户的输入语言或已保存的语言偏好。
 
-Use AskUserQuestion with ALL questions in ONE call:
+在一次调用中使用 AskUserQuestion 提出所有问题：
 
-### Question 1: Default Theme
+### 问题 1：默认主题
 
 ```yaml
-header: "Theme"
-question: "Default theme for article conversion?"
+header: "主题"
+question: "文章转换的默认主题？"
 options:
-  - label: "default (Recommended)"
-    description: "Classic layout - centered title with border, white-on-color H2 (default: blue)"
+  - label: "default（推荐）"
+    description: "经典布局 — 居中标题带边框，彩色背景上的白色 H2（默认：蓝色）"
   - label: "grace"
-    description: "Elegant - text shadows, rounded cards, refined blockquotes (default: purple)"
+    description: "优雅风格 — 文字阴影、圆体卡片、精致引用（默认：紫色）"
   - label: "simple"
-    description: "Minimal modern - asymmetric rounded corners, clean whitespace (default: green)"
+    description: "极简现代 — 不对称圆角、清爽留白（默认：绿色）"
   - label: "modern"
-    description: "Large rounded corners, pill headings, spacious (default: orange)"
+    description: "大圆角、胶囊式标题、宽敞布局（默认：橙色）"
 ```
 
-### Question 2: Default Color
+### 问题 2：默认颜色
 
 ```yaml
-header: "Color"
-question: "Default color preset? (theme default if not set)"
+header: "颜色"
+question: "默认颜色预设？（未设置时使用主题默认值）"
 options:
-  - label: "Theme default (Recommended)"
-    description: "Use the theme's built-in default color"
+  - label: "主题默认（推荐）"
+    description: "使用主题内置的默认颜色"
   - label: "blue"
     description: "#0F4C81 经典蓝"
   - label: "red"
@@ -74,103 +74,103 @@ options:
     description: "#009874 翡翠绿"
 ```
 
-Note: User can choose "Other" to type any preset name (vermilion, yellow, purple, sky, rose, olive, black, gray, pink, orange) or hex value.
+注意：用户可选择"其他"输入任意预设名称（vermilion、yellow、purple、sky、rose、olive、black、gray、pink、orange）或十六进制值。
 
-### Question 3: Default Publishing Method
+### 问题 3：默认发布方式
 
 ```yaml
-header: "Method"
-question: "Default publishing method?"
+header: "发布方式"
+question: "默认发布方式？"
 options:
-  - label: "remote-api (Recommended)"
-    description: "Fast, tunnels WeChat API calls through SSH to a server whose IP is on the WeChat allowlist. Default server: 62.234.16.218 (root), editable in EXTEND.md"
+  - label: "remote-api（推荐）"
+    description: "快速，通过 SSH 将微信 API 调用隧道传输到 IP 在白名单上的服务器。默认服务器：62.234.16.218（root），可在 EXTEND.md 中编辑"
   - label: "api"
-    description: "Fast, requires API credentials (AppID + AppSecret). Note: local machine IP must be on WeChat allowlist"
+    description: "快速，需要 API 凭据（AppID + AppSecret）。注意：本机 IP 必须在微信白名单上"
   - label: "browser"
-    description: "Slow, requires Chrome and login session"
+    description: "慢速，需要 Chrome 和登录会话"
 ```
 
-If the user selects `remote-api`, prompt for `remote_publish_host` (default: `62.234.16.218`), `remote_publish_user` (default: `root`), and either `remote_publish_password` (for password auth via sshpass) or `remote_publish_identity_file` (for SSH key auth, preferred). These can also be filled in later by editing EXTEND.md. Direct users to `references/server-setup.md` for IP allowlist and sshpass installation steps.
+如果用户选择了 `remote-api`，则提示输入 `remote_publish_host`（默认：`62.234.16.218`）、`remote_publish_user`（默认：`root`），以及 `remote_publish_password`（密码认证，通过 sshpass）或 `remote_publish_identity_file`（SSH 密钥认证，推荐）。这些也可以稍后在 EXTEND.md 中填写。引导用户查看 `references/server-setup.md` 了解 IP 白名单和 sshpass 安装步骤。
 
-### Question 4: Default Author
+### 问题 4：默认作者
 
 ```yaml
-header: "Author"
-question: "Default author name for articles?"
+header: "作者"
+question: "文章的默认作者名？"
 options:
-  - label: "No default"
-    description: "Leave empty, specify per article"
+  - label: "无默认值"
+    description: "留空，每篇文章单独指定"
 ```
 
-Note: User will likely choose "Other" to type their author name.
+注意：用户可能选择"其他"输入自己的作者名。
 
-### Question 5: Open Comments
+### 问题 5：开放评论
 
 ```yaml
-header: "Comments"
-question: "Enable comments on articles by default?"
+header: "评论"
+question: "默认开启文章评论？"
 options:
-  - label: "Yes (Recommended)"
-    description: "Allow readers to comment on articles"
-  - label: "No"
-    description: "Disable comments by default"
+  - label: "是（推荐）"
+    description: "允许读者对文章进行评论"
+  - label: "否"
+    description: "默认关闭评论"
 ```
 
-### Question 6: Fans-Only Comments
+### 问题 6：仅粉丝可评论
 
 ```yaml
-header: "Fans only"
-question: "Restrict comments to followers only?"
+header: "仅粉丝"
+question: "将评论限制为仅粉丝可评？"
 options:
-  - label: "No (Recommended)"
-    description: "All readers can comment"
-  - label: "Yes"
-    description: "Only followers can comment"
+  - label: "否（推荐）"
+    description: "所有读者都可以评论"
+  - label: "是"
+    description: "仅粉丝可以评论"
 ```
 
-### Question 7: Save Location
+### 问题 7：保存位置
 
 ```yaml
-header: "Save"
-question: "Where to save preferences?"
+header: "保存"
+question: "偏好设置保存位置？"
 options:
-  - label: "Project (Recommended)"
-    description: ".post-to-wechat/ (this project only)"
-  - label: "User"
-    description: "~/.post-to-wechat/ (all projects)"
+  - label: "项目级（推荐）"
+    description: ".post-to-wechat/（仅当前项目）"
+  - label: "用户级"
+    description: "~/.post-to-wechat/（所有项目）"
 ```
 
-## Save Locations
+## 保存位置
 
-| Choice | Path | Scope |
+| 选择 | 路径 | 作用域 |
 |--------|------|-------|
-| Project | `.post-to-wechat/EXTEND.md` | Current project |
-| User | `~/.post-to-wechat/EXTEND.md` | All projects |
+| 项目级 | `.post-to-wechat/EXTEND.md` | 当前项目 |
+| 用户级 | `~/.post-to-wechat/EXTEND.md` | 所有项目 |
 
-## After Setup
+## 设置完成后
 
-1. Create directory if needed
-2. Write EXTEND.md
-3. Confirm: "Preferences saved to [path]"
-4. Continue to Step 0 (load the saved preferences)
-5. If `remote-api` was selected, remind: "请参阅 references/server-setup.md 完成服务器侧配置（IP 白名单、SSH 可达性、sshpass 安装）"
+1. 如需要则创建目录
+2. 写入 EXTEND.md
+3. 确认："偏好设置已保存到 [path]"
+4. 继续到步骤 0（加载已保存的偏好设置）
+5. 如果选择了 `remote-api`，提醒："请参阅 references/server-setup.md 完成服务器侧配置（IP 白名单、SSH 可达性、sshpass 安装）"
 
-## EXTEND.md Template
+## EXTEND.md 模板
 
-### Single Account (Default)
+### 单账号（默认）
 
 ```md
 default_theme: [default/grace/simple/modern]
-default_color: [preset name, hex, or empty for theme default]
+default_color: [预设名、十六进制值或留空使用主题默认]
 default_publish_method: [remote-api/api/browser]
-default_author: [author name or empty]
+default_author: [作者名或留空]
 need_open_comment: [1/0]
 only_fans_can_comment: [1/0]
 chrome_profile_path:
 
-# Remote API publishing — only fill in if default_publish_method is remote-api
-# or you plan to pass --remote on the CLI.
-# Default server: 62.234.16.218 (root). Replace with your own if needed.
+# 远程 API 发布 — 仅当 default_publish_method 为 remote-api
+# 或计划通过 CLI --remote 时才需要填写。
+# 默认服务器：62.234.16.218（root）。如有需要可替换。
 remote_publish_host: 62.234.16.218
 remote_publish_user: root
 remote_publish_port: 22
@@ -182,47 +182,47 @@ remote_publish_connect_timeout:
 remote_publish_proxy_jump:
 ```
 
-Raw `ssh` / `scp` options are intentionally not supported; only the typed keys above are honored. Authentication supports both SSH key (`remote_publish_identity_file`, preferred for production) and password (`remote_publish_password`, via sshpass, acceptable for trusted private servers). If both are set, the identity file takes precedence.
+明确不支持原始的 `ssh` / `scp` 选项；仅识别上述带类型的键。认证同时支持 SSH 密钥（`remote_publish_identity_file`，生产环境推荐）和密码（`remote_publish_password`，通过 sshpass，受信任的私有服务器可用）。如果同时设置，身份文件优先。
 
-### Multi-Account
+### 多账号
 
 ```md
 default_theme: [default/grace/simple/modern]
-default_color: [preset name, hex, or empty for theme default]
+default_color: [预设名、十六进制值或留空使用主题默认]
 
 accounts:
-  - name: [display name]
-    alias: [short key, e.g. "main"]
+  - name: [显示名称]
+    alias: [短键，如 "main"]
     default: true
     default_publish_method: [remote-api/api/browser]
-    default_author: [author name]
+    default_author: [作者名]
     need_open_comment: [1/0]
     only_fans_can_comment: [1/0]
-    app_id: [WeChat App ID, optional]
-    app_secret: [WeChat App Secret, optional]
-    # Remote API publishing (optional, per-account override of globals)
+    app_id: [微信 App ID，可选]
+    app_secret: [微信 App Secret，可选]
+    # 远程 API 发布（可选，账号级覆盖全局设置）
     remote_publish_host:
     remote_publish_user:
     remote_publish_password:
     remote_publish_identity_file:
-  - name: [second account name]
-    alias: [short key, e.g. "ai-tools"]
+  - name: [第二个账号名称]
+    alias: [短键，如 "ai-tools"]
     default_publish_method: [remote-api/api/browser]
-    default_author: [author name]
+    default_author: [作者名]
     need_open_comment: [1/0]
     only_fans_can_comment: [1/0]
 ```
 
-## Adding More Accounts Later
+## 后续添加更多账号
 
-After initial setup, users can add accounts by editing EXTEND.md:
+初次设置后，用户可通过编辑 EXTEND.md 添加账号：
 
-1. Add an `accounts:` block with list items
-2. Move per-account settings (author, publish method, comments) into each account entry
-3. Keep global settings (theme, color) at the top level
-4. Each account needs a unique `alias` (used for CLI `--account` arg and Chrome profile naming)
-5. Set `default: true` on the primary account
+1. 添加包含列表项的 `accounts:` 块
+2. 将账号级设置（作者、发布方式、评论）移入各账号条目
+3. 将全局设置（主题、颜色）保留在顶层
+4. 每个账号需要唯一的 `alias`（用于 CLI `--account` 参数和 Chrome 配置文件命名）
+5. 在主账号上设置 `default: true`
 
-## Modifying Preferences Later
+## 后续修改偏好设置
 
-Users can edit EXTEND.md directly or delete it to trigger setup again.
+用户可直接编辑 EXTEND.md，或删除它以再次触发设置流程。

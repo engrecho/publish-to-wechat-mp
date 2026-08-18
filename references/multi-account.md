@@ -1,17 +1,17 @@
-# Multi-Account Support
+# 多账号支持
 
-Details for managing multiple WeChat Official Accounts through one EXTEND.md. SKILL.md only covers single-account flow and the selection prompt — read this file when the user has an `accounts:` block, asks to publish to a specific account, or needs per-account credentials.
+通过一份 EXTEND.md 管理多个微信公众号的详细说明。SKILL.md 仅涵盖单账号流程和选择提示 — 当用户配置了 `accounts:` 块、要求发布到特定账号或需要账号级凭据时，请阅读本文件。
 
-## Compatibility
+## 兼容性
 
-| Condition | Mode | Behavior |
+| 条件 | 模式 | 行为 |
 |-----------|------|----------|
-| No `accounts` block | Single-account | Original behavior, no changes |
-| `accounts` with 1 entry | Single-account | Auto-select, no prompt |
-| `accounts` with 2+ entries | Multi-account | Prompt to select before publishing |
-| `accounts` with `default: true` | Multi-account | Pre-select default; user can switch |
+| 无 `accounts` 块 | 单账号 | 原始行为，无变化 |
+| `accounts` 中仅 1 条 | 单账号 | 自动选择，不提示 |
+| `accounts` 中 2 条及以上 | 多账号 | 发布前提示选择 |
+| `accounts` 中有 `default: true` | 多账号 | 预选默认账号；用户可切换 |
 
-## EXTEND.md Example
+## EXTEND.md 示例
 
 ```md
 default_theme: default
@@ -38,64 +38,64 @@ accounts:
     only_fans_can_comment: 0
 ```
 
-## Per-Account vs Global Keys
+## 账号级键与全局键
 
-**Per-account** (also accepted globally as fallback): `default_publish_method`, `default_author`, `need_open_comment`, `only_fans_can_comment`, `app_id`, `app_secret`, `chrome_profile_path`, `remote_publish_host`, `remote_publish_user`, `remote_publish_port`, `remote_publish_password`, `remote_publish_identity_file`, `remote_publish_known_hosts_file`, `remote_publish_strict_host_key_checking`, `remote_publish_connect_timeout`, `remote_publish_proxy_jump`.
+**账号级**（也接受全局值作为回退）：`default_publish_method`、`default_author`、`need_open_comment`、`only_fans_can_comment`、`app_id`、`app_secret`、`chrome_profile_path`、`remote_publish_host`、`remote_publish_user`、`remote_publish_port`、`remote_publish_password`、`remote_publish_identity_file`、`remote_publish_known_hosts_file`、`remote_publish_strict_host_key_checking`、`remote_publish_connect_timeout`、`remote_publish_proxy_jump`。
 
-**Global-only** (always shared): `default_theme`, `default_color`.
+**仅全局**（始终共享）：`default_theme`、`default_color`。
 
-## Account Selection (Step 0.5)
+## 账号选择（步骤 0.5）
 
-Insert between Step 0 (Load EXTEND.md) and Step 1 (Determine input type):
+插入在步骤 0（加载 EXTEND.md）和步骤 1（确定输入类型）之间：
 
 ```
-if no accounts block:
-    → single-account mode (original behavior)
-elif accounts.length == 1:
-    → auto-select the only account
-elif --account <alias> CLI arg:
-    → select matching account
-elif one account has default: true:
-    → pre-select, display: "Using account: <name> (--account to switch)"
-else:
-    → prompt user to choose from the list
+if 无 accounts 块：
+    → 单账号模式（原始行为）
+elif accounts.length == 1：
+    → 自动选择唯一的账号
+elif --account <alias> CLI 参数：
+    → 选择匹配的账号
+elif 某个账号设置了 default: true：
+    → 预选该项，显示："正在使用账号：<name>（--account 切换）"
+else：
+    → 提示用户从列表中选择
 ```
 
-## Credential Resolution (API Method)
+## 凭据解析（API 方式）
 
-For the selected account with alias `{alias}`, try in this order (first hit wins):
+对于别名是 `{alias}` 的已选账号，按以下顺序尝试（首个命中即生效）：
 
-1. `app_id` / `app_secret` inline in the EXTEND.md account block
-2. Env vars `WECHAT_{ALIAS}_APP_ID` / `WECHAT_{ALIAS}_APP_SECRET` (alias uppercased, hyphens → underscores)
-3. `.post-to-wechat/.env` with the prefixed key `WECHAT_{ALIAS}_APP_ID`
-4. `~/.post-to-wechat/.env` with the prefixed key
-5. Fallback to unprefixed `WECHAT_APP_ID` / `WECHAT_APP_SECRET`
+1. EXTEND.md 账号块中内嵌的 `app_id` / `app_secret`
+2. 环境变量 `WECHAT_{ALIAS}_APP_ID` / `WECHAT_{ALIAS}_APP_SECRET`（别名大写，连字符替换为下划线）
+3. `.post-to-wechat/.env` 中带前缀的键 `WECHAT_{ALIAS}_APP_ID`
+4. `~/.post-to-wechat/.env` 中带前缀的键
+5. 回退到无前缀的 `WECHAT_APP_ID` / `WECHAT_APP_SECRET`
 
-### .env Multi-Account Example
+### .env 多账号示例
 
 ```bash
-# Account: main
+# 账号：main
 WECHAT_MAIN_APP_ID=your_wechat_app_id
 WECHAT_MAIN_APP_SECRET=your_wechat_app_secret
 
-# Account: ai-tools
+# 账号：ai-tools
 WECHAT_AI_TOOLS_APP_ID=your_ai_tools_wechat_app_id
 WECHAT_AI_TOOLS_APP_SECRET=your_ai_tools_wechat_app_secret
 ```
 
-## Chrome Profile (Browser Method)
+## Chrome 配置文件（浏览器方式）
 
-Each account uses an isolated Chrome profile so logins don't collide.
+每个账号使用独立的 Chrome 配置文件，避免登录冲突。
 
-| Source | Path |
+| 来源 | 路径 |
 |--------|------|
-| Account `chrome_profile_path` in EXTEND.md | Use as-is |
-| Auto-generated from alias | `{shared_profile_parent}/wechat-{alias}/` |
-| Single-account fallback | Shared default profile |
+| EXTEND.md 中账号的 `chrome_profile_path` | 原样使用 |
+| 根据别名自动生成 | `{shared_profile_parent}/wechat-{alias}/` |
+| 单账号回退 | 共享默认配置文件 |
 
-## CLI `--account` Flag
+## CLI `--account` 标志
 
-All publishing scripts accept `--account <alias>`:
+所有发布脚本都接受 `--account <alias>`：
 
 ```bash
 ${BUN_X} {baseDir}/scripts/wechat-api.ts <file> --theme default --account ai-tools
@@ -103,16 +103,16 @@ ${BUN_X} {baseDir}/scripts/wechat-article.ts --markdown <file> --theme default -
 ${BUN_X} {baseDir}/scripts/wechat-browser.ts --markdown <file> --images ./photos/ --account main
 ```
 
-## Remote API Publishing
+## 远程 API 发布
 
-`wechat-api.ts` supports a `remote-api` mode that tunnels WeChat API calls through an SSH SOCKS5 dynamic port forward to a server whose IP is on WeChat's allowlist. Markdown rendering, image processing, draft assembly, and HTML rewriting still happen locally; only outbound HTTPS calls to `api.weixin.qq.com` traverse the tunnel. No files are written to the remote host and `AppSecret` never leaves the local process. The remote host needs only `sshd` and outbound network access.
+`wechat-api.ts` 支持 `remote-api` 模式，通过 SSH SOCKS5 动态端口转发将微信 API 调用隧道传输到 IP 在微信白名单上的服务器。Markdown 渲染、图片处理、草稿组装和 HTML 重写仍在本地进行；只有发往 `api.weixin.qq.com` 的外向 HTTPS 调用经过隧道。远端主机上不会写入任何文件，`AppSecret` 不会离开本地进程。远端主机只需要 `sshd` 和外网访问。
 
-### Per-Account Configuration
+### 账号级配置
 
 ```md
 default_theme: default
 default_color: blue
-default_publish_method: browser   # browser remains the default
+default_publish_method: browser   # browser 仍是默认值
 
 accounts:
   - name: 主账号
@@ -139,21 +139,21 @@ accounts:
     remote_publish_strict_host_key_checking: accept-new
 ```
 
-Account-level `remote_publish_*` values override top-level globals. CLI `--remote-*` flags override both.
+账号级 `remote_publish_*` 值覆盖顶层全局值。CLI `--remote-*` 标志优先于二者。
 
-### CLI Usage
+### CLI 用法
 
 ```bash
-# Use the account's default_publish_method (remote-api here):
+# 使用账号自身的 default_publish_method（此处为 remote-api）：
 ${BUN_X} {baseDir}/scripts/wechat-api.ts <file> --theme default --account ai-tools
 
-# Force remote mode regardless of default_publish_method:
+# 无论 default_publish_method 是什么，强制启用远程模式：
 ${BUN_X} {baseDir}/scripts/wechat-api.ts <file> --theme default --account main --remote --remote-host other-server.example.com
 ```
 
-### Security Notes
+### 安全注意事项
 
-- Authentication supports both SSH keys (`remote_publish_identity_file`) and passwords (`remote_publish_password`, via `sshpass`). SSH keys are preferred for production; passwords are acceptable only for trusted private servers.
-- Only the typed `remote_publish_*` keys are read; raw `ssh` / `scp` options are intentionally not supported.
-- The tunnel forwards raw TCP; TLS verification for `api.weixin.qq.com` is still performed end-to-end by the local process.
-- Passwords are never written to logs, error messages, or stdout. If both `remote_publish_identity_file` and `remote_publish_password` are set, the identity file takes precedence and the password is ignored.
+- 认证同时支持 SSH 密钥（`remote_publish_identity_file`）和密码（`remote_publish_password`，通过 sshpass）。生产环境推荐使用 SSH 密钥；受信任的私有服务器可使用密码。
+- 仅读取带类型的 `remote_publish_*` 键；明确不支持原始 `ssh` / `scp` 选项。
+- 隧道转发原始 TCP；对 `api.weixin.qq.com` 的 TLS 验证仍由本地进程端到端执行。
+- 密码永远不会写入日志、错误消息或 stdout。如果同时设置了 `remote_publish_identity_file` 和 `remote_publish_password`，身份文件优先生效，密码被忽略。
