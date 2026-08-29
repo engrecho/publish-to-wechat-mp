@@ -1,0 +1,38 @@
+name: Sync gzh-design
+
+on:
+  schedule:
+    # 每天凌晨 3 点（UTC）自动同步，等价于北京时间 11:00
+    - cron: '0 3 * * *'
+  # 支持在 Actions 页面手动触发
+  workflow_dispatch:
+
+permissions:
+  # 内置 GITHUB_TOKEN 即可 push，无需额外 PAT
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 拉取上游
+        run: |
+          git clone --depth 1 https://github.com/isjiamu/gzh-design-skill.git /tmp/gzh
+          rm -rf /tmp/gzh/.git
+
+      - name: 覆盖 vendor 目录
+        run: rsync -a --delete /tmp/gzh/ 4_typography/vendor/gzh-design/
+
+      - name: 注入本地主题
+        run: python3 scripts/inject-local-themes.py
+
+      - name: 有变化才提交
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add 4_typography/vendor/gzh-design
+          git diff --cached --quiet && echo "无更新，跳过" && exit 0
+          git commit -m "chore: sync gzh-design-skill 上游更新"
+          git push
