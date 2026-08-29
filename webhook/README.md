@@ -26,20 +26,20 @@ webhook-router.sh  ─── 解析 project/branch/action 参数
 https://tencent.bajiaolu.cn:11416/hook?access_key=xxx&project=<project>&branch=<branch>&action=<action>
 ```
 
-| 参数 | 必填 | 默认 | 说明 |
-|------|------|------|------|
-| `access_key` | 是 | - | 宝塔 WebHook 鉴权密钥 |
-| `project` | 是 | - | 部署项目：`aibuddy` / `wechat-mp` |
-| `branch` | 否 | `main` | 部署分支 |
-| `action` | 否 | `deploy` | 动作：`deploy` / `pull` / `restart` |
+| 参数           | 必填 | 默认       | 说明                               |
+| ------------ | -- | -------- | -------------------------------- |
+| `access_key` | 是  | -        | 宝塔 WebHook 鉴权密钥                  |
+| `project`    | 是  | -        | 部署项目：`aibuddy` / `wechat-mp`     |
+| `branch`     | 否  | `main`   | 部署分支                             |
+| `action`     | 否  | `deploy` | 动作：`deploy` / `pull` / `restart` |
 
 ### action 语义
 
-| action | 行为 |
-|--------|------|
-| `deploy` | git pull → 构建（npm install / composer install）→ 重启服务（PM2 / php-fpm / nginx） |
-| `pull` | 仅 git pull，不构建不重启 |
-| `restart` | 仅重启服务，不拉代码 |
+| action    | 行为                                                                         |
+| --------- | -------------------------------------------------------------------------- |
+| `deploy`  | git pull → 构建（npm install / composer install）→ 重启服务（PM2 / php-fpm / nginx） |
+| `pull`    | 仅 git pull，不构建不重启                                                          |
+| `restart` | 仅重启服务，不拉代码                                                                 |
 
 ## 服务器端安装（一次性）
 
@@ -54,8 +54,9 @@ bash install-webhook.sh
 ```
 
 `install-webhook.sh` 会：
+
 1. 把 `webhook-router.sh` / `deploy-aibuddy.sh` / `deploy-wechat-mp.sh` 复制到 `/www/server/panel/script/`
-2. 询问并写入 access_key 到 `/www/server/panel/script/.webhook-access-key`
+2. 询问并写入 access\_key 到 `/www/server/panel/script/.webhook-access-key`
 3. 创建日志文件 `/var/log/webhook-deploy.log`
 4. 输出宝塔面板与 GitHub 的配置指引
 
@@ -92,7 +93,7 @@ Content type: application/json
 Events:       Just the push event
 ```
 
-> 把 `<key>` 替换为宝塔 WebHook 插件生成的 access_key
+> 把 `<key>` 替换为宝塔 WebHook 插件生成的 access\_key
 
 ## 手动触发
 
@@ -114,10 +115,10 @@ curl 'https://tencent.bajiaolu.cn:11416/hook?access_key=xxx&project=wechat-mp&ac
 
 ## 部署目标路径
 
-| project | 部署目录 | 服务名 |
-|---------|----------|--------|
-| `aibuddy` | `/www/wwwroot/aibuddy` | `aibuddy`（PM2，如有 Node 部分）+ php-fpm + nginx |
-| `wechat-mp` | `/www/wwwroot/wechat-mp` | `wechat-publish`（PM2） |
+| project     | 部署目录                     | 服务名                                        |
+| ----------- | ------------------------ | ------------------------------------------ |
+| `aibuddy`   | `/www/wwwroot/aibuddy`   | `aibuddy`（PM2，如有 Node 部分）+ php-fpm + nginx |
+| `wechat-mp` | `/www/wwwroot/wechat-mp` | `wechat-publish`（PM2）                      |
 
 ## 日志
 
@@ -163,11 +164,12 @@ Webhook 只负责「更新」（pull + 构建 + 重启）。**首次部署**需�
 
 ## 故障排查
 
-| 现象 | 排查 |
-|------|------|
-| webhook 触发但无部署日志 | `tail -f /var/log/webhook-deploy.log`；检查宝塔 webhook 脚本是否正确 |
+| 现象               | 排查                                                                  |
+| ---------------- | ------------------------------------------------------------------- |
+| webhook 触发但无部署日志 | `tail -f /var/log/webhook-deploy.log`；检查宝塔 webhook 脚本是否正确           |
 | `access_key 不匹配` | 检查 URL 里的 key 与 `/www/server/panel/script/.webhook-access-key` 是否一致 |
-| `部署脚本不存在` | 跑 `bash install-webhook.sh` 重新安装脚本 |
-| `PM2 进程不存在` | 首次部署需先手动 `bash deploy.sh` 启动 |
-| `git clone 失败` | 腾讯云访问 GitHub 受限，确认脚本用了 `ghproxy.com` 代理 |
-| 部署后服务不可用 | `pm2 logs <service> --lines 50` 查看错误 |
+| `部署脚本不存在`        | 跑 `bash install-webhook.sh` 重新安装脚本                                  |
+| `PM2 进程不存在`      | 首次部署需先手动 `bash deploy.sh` 启动                                        |
+| `git clone 失败`   | 腾讯云访问 GitHub 受限，确认脚本用了 `ghproxy.com` 代理                             |
+| 部署后服务不可用         | `pm2 logs <service> --lines 50` 查看错误                                |
+
