@@ -1,4 +1,4 @@
-name: Sync gzh-design
+name: Sync upstream skills
 
 on:
   schedule:
@@ -12,12 +12,13 @@ permissions:
   contents: write
 
 jobs:
-  sync:
+  # 同步 4_theme-formator 的排版技能（gzh-design-skill）+ 注入本地主题
+  sync-gzh-design:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: 拉取上游
+      - name: 拉取上游 gzh-design-skill
         run: |
           git clone --depth 1 https://github.com/isjiamu/gzh-design-skill.git /tmp/gzh
           rm -rf /tmp/gzh/.git
@@ -35,4 +36,29 @@ jobs:
           git add 4_theme-formator/vendor/gzh-design
           git diff --cached --quiet && echo "无更新，跳过" && exit 0
           git commit -m "chore: sync gzh-design-skill 上游更新"
+          git push
+
+  # 同步 1_content-parser 的视频解析技能（all-platform-video-extract），纯镜像无本地注入
+  # 串行执行避免两个 job 同时 push main 冲突
+  sync-all-platform-video-extract:
+    needs: sync-gzh-design
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 拉取上游 all-platform-video-extract
+        run: |
+          git clone --depth 1 https://github.com/engrecho/all-platform-video-extract.git /tmp/apve
+          rm -rf /tmp/apve/.git
+
+      - name: 覆盖 vendor 目录
+        run: rsync -a --delete /tmp/apve/ 1_content-parser/vendor/all-platform-video-extract/
+
+      - name: 有变化才提交
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add 1_content-parser/vendor/all-platform-video-extract
+          git diff --cached --quiet && echo "无更新，跳过" && exit 0
+          git commit -m "chore: sync all-platform-video-extract 上游更新"
           git push

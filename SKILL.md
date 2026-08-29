@@ -44,7 +44,7 @@ metadata:
 | 目录 | 职责 |
 |------|------|
 | `SKILL.md`（0_ 总编排） | 阶段调度、产物验收、失败回退 |
-| `1_content-parser/` | 阶段①：解析内容 |
+| `1_content-parser/` | 阶段①：解析内容（视频平台链接委托 `1_content-parser/vendor/all-platform-video-extract/` 解析） |
 | `2_content-rewriter/` | 阶段②：原创化改写 + 原创检测 + 标题/简介生成（脚本在 `2_content-rewriter/scripts/`） |
 | `3_image-processor/` | 阶段③：图片去重 + 头图生成 |
 | `4_theme-formator/` | 阶段④：排版渲染（核心流程在 `4_theme-formator/vendor/gzh-design/SKILL.md`，本地主题在 `4_theme-formator/themes-local/`，注入脚本在 `4_theme-formator/scripts/`） |

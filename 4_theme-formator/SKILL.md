@@ -33,7 +33,7 @@ description: 公众号排版。将改写稿 Markdown 渲染为微信友好 HTML�
 
 ## 上游同步机制
 
-- `.github/workflows/sync-gzh-design.yml` 每日自动：拉上游 → `rsync --delete` 覆盖 vendor → 跑注入脚本合并本地主题 → 有变化才 commit + push（随后触发服务器自动部署）。
+- `.github/workflows/sync-upstream-skills.yml` 每日自动：拉上游 → `rsync --delete` 覆盖 vendor → 跑注入脚本合并本地主题 → 有变化才 commit + push（随后触发服务器自动部署）。该 workflow 同时负责 1_content-parser 的 vendor 同步。
 - 因此 vendor 里**永远** = 上游最新版 + 本地主题，本地改动零丢失。
 
 ## 硬性约束
