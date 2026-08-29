@@ -7,10 +7,10 @@
 import sys
 from pathlib import Path
 
-ROWS_FILE = Path("4_typography/themes-local/theme-index.rows.md")
-INDEX_FILE = Path("4_typography/vendor/gzh-design/references/theme-index.md")
-THEMES_LOCAL_DIR = Path("4_typography/themes-local")
-REFERENCES_DIR = Path("4_typography/vendor/gzh-design/references")
+ROWS_FILE = Path("4_theme-formator/themes-local/theme-index.rows.md")
+INDEX_FILE = Path("4_theme-formator/vendor/gzh-design/references/theme-index.md")
+THEMES_LOCAL_DIR = Path("4_theme-formator/themes-local")
+REFERENCES_DIR = Path("4_theme-formator/vendor/gzh-design/references")
 
 
 def load_local_rows():

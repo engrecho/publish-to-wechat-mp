@@ -31,7 +31,7 @@ metadata:
 3_image-processor       ③ 图片处理 → images/（去重后正文图 + cover.jpg 头图）
    │
    ▼
-4_typography            ④ 排版 → final.html（微信格式 HTML + 预览）
+4_theme-formator       ④ 排版 → final.html（微信格式 HTML + 预览）
    │
    ▼
 5_publisher             ⑤ 发布 → 公众号草稿箱（media_id + 后台链接）
@@ -47,7 +47,7 @@ metadata:
 | `1_content-parser/` | 阶段①：解析内容 |
 | `2_content-rewriter/` | 阶段②：原创化改写 + 原创检测 + 标题/简介生成（脚本在 `2_content-rewriter/scripts/`） |
 | `3_image-processor/` | 阶段③：图片去重 + 头图生成 |
-| `4_typography/` | 阶段④：排版渲染（脚本在 `4_typography/scripts/`） |
+| `4_theme-formator/` | 阶段④：排版渲染（核心流程在 `4_theme-formator/vendor/gzh-design/SKILL.md`，本地主题在 `4_theme-formator/themes-local/`） |
 | `5_publisher/` | 阶段⑤：发布（remote-api / api / browser，脚本在 `5_publisher/scripts/`，配置文档在 `5_publisher/references/`） |
 | `server/` | 服务器端微信发布中转服务（含部署脚本 `server/deploy.sh` 与部署说明） |
 | `work/<slug>/` | 单篇文章的工作目录（中间产物，不入库） |
@@ -101,7 +101,7 @@ metadata:
 1. ① 1_content-parser：抓取 URL → `work/ai-job-impact/source.md`
 2. ② 2_content-rewriter：四层改写 → 原创自检（`bun 2_content-rewriter/scripts/originality-check.ts`）→ 10 标题评分选 1 → 简介 → `work/ai-job-impact/rewritten.md`
 3. ③ 3_image-processor：下载图片、pHash 去重、生成 900×383 封面 → `work/ai-job-impact/images/`
-4. ④ 4_typography：渲染 final.html + 预览
+4. ④ 4_theme-formator：渲染 final.html + 预览
 5. ⑤ 5_publisher：remote-api 方式存草稿，报告 media_id 与后台链接
 
 ## 环境要求

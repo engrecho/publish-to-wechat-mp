@@ -23,7 +23,7 @@ jobs:
           rm -rf /tmp/gzh/.git
 
       - name: 覆盖 vendor 目录
-        run: rsync -a --delete /tmp/gzh/ 4_typography/vendor/gzh-design/
+        run: rsync -a --delete /tmp/gzh/ 4_theme-formator/vendor/gzh-design/
 
       - name: 注入本地主题
         run: python3 scripts/inject-local-themes.py
@@ -32,7 +32,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add 4_typography/vendor/gzh-design
+          git add 4_theme-formator/vendor/gzh-design
           git diff --cached --quiet && echo "无更新，跳过" && exit 0
           git commit -m "chore: sync gzh-design-skill 上游更新"
           git push
