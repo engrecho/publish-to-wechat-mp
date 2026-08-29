@@ -49,8 +49,7 @@ metadata:
 | `3_image-processor/` | 阶段③：图片去重 + 头图生成 |
 | `4_typography/` | 阶段④：排版渲染（脚本在 `4_typography/scripts/`） |
 | `5_publisher/` | 阶段⑤：发布（remote-api / api / browser，脚本在 `5_publisher/scripts/`，配置文档在 `5_publisher/references/`） |
-| `server/` | 服务器端微信发布中转服务 |
-| `webhook/` | 服务器自动部署脚本 |
+| `server/` | 服务器端微信发布中转服务（含部署脚本 `server/deploy.sh` 与部署说明） |
 | `work/<slug>/` | 单篇文章的工作目录（中间产物，不入库） |
 
 ## 编排规则

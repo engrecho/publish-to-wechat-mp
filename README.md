@@ -17,8 +17,7 @@
 ├── 5_publisher/              # ⑤ 发布：remote-api / api / browser → 公众号草稿箱
 │   ├── scripts/              #    wechat-api.ts 等发布脚本与测试
 │   └── references/           #    发布配置与服务器设置参考文档
-├── server/                   # 服务器端微信发布中转服务
-├── webhook/                  # 服务器自动部署脚本
+├── server/                   # 微信发布中转服务（部署脚本 + 说明）
 └── work/<slug>/              # 单篇文章工作目录（中间产物，不入库）
 ```
 
@@ -93,7 +92,8 @@ remote-api 方式需先完成服务器侧配置（微信 IP 白名单等），�
 ## 服务器与部署
 
 - 部署面板：https://deploy.bajiaolu.cn（部署详情见 deploy-system skill）
-- GitHub Webhook 推送 main 分支自动部署（`webhook/` 目录）
+- GitHub Webhook 推送 main 分支自动部署（deploy-system 原生支持，无需额外配置）
+- server 中转服务部署：见 `server/README.md`
 
 ## 更多文档
 

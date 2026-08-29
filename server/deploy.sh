@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# post-to-wechat 中转服务器部署脚本
-# 用法：在服务器上执行 bash deploy.sh
+# server 微信发布中转服务 部署脚本
+# 用法：在服务器上执行 bash server/deploy.sh
 # 会自动：检测环境 → 上传/拉取代码 → 配置 .env → PM2 启动 → 输出验证命令
 # 宝塔反向代理 + 微信 IP 白名单需手动配置（脚本末尾会提示）
 
@@ -45,16 +45,16 @@ ok "PM2 $(pm2 --version)"
 # ========== 步骤 2：准备代码 ==========
 info "步骤 2/5：准备 server 代码"
 
-# 如果 deploy.sh 所在目录已有 server/index.js，直接用当前目录
+# deploy.sh 与 index.js / package.json 同目录（server/）
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-if [ -f "$SCRIPT_DIR/server/index.js" ]; then
-  info "从当前目录复制 server/ 到 $INSTALL_DIR"
+if [ -f "$SCRIPT_DIR/index.js" ]; then
+  info "从当前目录复制 server 代码到 $INSTALL_DIR"
   mkdir -p "$INSTALL_DIR/server"
-  cp "$SCRIPT_DIR/server/index.js" "$INSTALL_DIR/server/index.js"
-  cp "$SCRIPT_DIR/server/package.json" "$INSTALL_DIR/server/package.json"
+  cp "$SCRIPT_DIR/index.js" "$INSTALL_DIR/server/index.js"
+  cp "$SCRIPT_DIR/package.json" "$INSTALL_DIR/server/package.json"
   ok "server 代码已就位"
 else
-  err "未找到 server/index.js。请确保 deploy.sh 与 server/ 目录在同一层级，或手动复制 server/ 到 $INSTALL_DIR/server/"
+  err "未找到 index.js。请确保 server/deploy.sh 与 server/index.js 在同一目录"
 fi
 
 # ========== 步骤 3：配置 .env ==========
