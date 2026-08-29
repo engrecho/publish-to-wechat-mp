@@ -20,6 +20,7 @@ description: 公众号排版。将改写稿 Markdown 渲染为微信友好 HTML�
 | `vendor/gzh-design/` | 上游 [gzh-design-skill](https://github.com/isjiamu/gzh-design-skill) 镜像，由 GitHub Action 每日自动同步，**禁止手工修改**（会被下次同步覆盖） |
 | `themes-local/` | 本地自建主题（组件库文件 + 登记行），同步永不动它 |
 | `themes-local/theme-index.rows.md` | 本地主题在 theme-index 中的登记行（格式说明见文件内注释） |
+| `scripts/inject-local-themes.py` | 本地主题注入脚本：把 themes-local 的主题文件与登记行幂等合入 vendor 镜像 |
 
 ## 排版流程
 
@@ -28,7 +29,7 @@ description: 公众号排版。将改写稿 Markdown 渲染为微信友好 HTML�
 3. **用户要求新风格时**：走 `vendor/gzh-design/references/theme-generator.md` 的自定义主题生成流程，但产物落点改为：
    - 组件库文件 → `themes-local/theme-{英文标识}.md`（**不是** vendor 的 references/）
    - 登记行 → 追加到 `themes-local/theme-index.rows.md`
-4. **登记后本地验证**：在仓库根目录跑 `python3 scripts/inject-local-themes.py`，确认本地主题出现在 vendor 的 references/ 和 theme-index 中（该操作幂等，可重复执行），再跑 `python3 4_theme-formator/vendor/gzh-design/scripts/component_lint.py 4_theme-formator/vendor/gzh-design` 确认 0 ERROR。
+4. **登记后本地验证**：跑 `python3 4_theme-formator/scripts/inject-local-themes.py`（任意目录执行均可），确认本地主题出现在 vendor 的 references/ 和 theme-index 中（该操作幂等，可重复执行），再跑 `python3 4_theme-formator/vendor/gzh-design/scripts/component_lint.py 4_theme-formator/vendor/gzh-design` 确认 0 ERROR。
 
 ## 上游同步机制
 

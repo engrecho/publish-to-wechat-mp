@@ -47,7 +47,7 @@ metadata:
 | `1_content-parser/` | 阶段①：解析内容 |
 | `2_content-rewriter/` | 阶段②：原创化改写 + 原创检测 + 标题/简介生成（脚本在 `2_content-rewriter/scripts/`） |
 | `3_image-processor/` | 阶段③：图片去重 + 头图生成 |
-| `4_theme-formator/` | 阶段④：排版渲染（核心流程在 `4_theme-formator/vendor/gzh-design/SKILL.md`，本地主题在 `4_theme-formator/themes-local/`） |
+| `4_theme-formator/` | 阶段④：排版渲染（核心流程在 `4_theme-formator/vendor/gzh-design/SKILL.md`，本地主题在 `4_theme-formator/themes-local/`，注入脚本在 `4_theme-formator/scripts/`） |
 | `5_article-publisher/` | 阶段⑤：发布（remote-api / api / browser，脚本在 `5_article-publisher/scripts/`，配置文档在 `5_article-publisher/references/`） |
 | `server/` | 服务器端微信发布中转服务（含部署脚本 `server/deploy.sh` 与部署说明） |
 | `work/<slug>/` | 单篇文章的工作目录（中间产物，不入库） |

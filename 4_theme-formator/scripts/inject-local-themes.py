@@ -7,10 +7,12 @@
 import sys
 from pathlib import Path
 
-ROWS_FILE = Path("4_theme-formator/themes-local/theme-index.rows.md")
-INDEX_FILE = Path("4_theme-formator/vendor/gzh-design/references/theme-index.md")
-THEMES_LOCAL_DIR = Path("4_theme-formator/themes-local")
-REFERENCES_DIR = Path("4_theme-formator/vendor/gzh-design/references")
+# 以脚本位置定位（脚本在 4_theme-formator/scripts/ 下），任意 cwd 执行均可
+STAGE_DIR = Path(__file__).resolve().parent.parent
+ROWS_FILE = STAGE_DIR / "themes-local/theme-index.rows.md"
+INDEX_FILE = STAGE_DIR / "vendor/gzh-design/references/theme-index.md"
+THEMES_LOCAL_DIR = STAGE_DIR / "themes-local"
+REFERENCES_DIR = STAGE_DIR / "vendor/gzh-design/references"
 
 
 def load_local_rows():

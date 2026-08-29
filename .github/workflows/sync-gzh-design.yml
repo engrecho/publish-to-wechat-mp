@@ -26,7 +26,7 @@ jobs:
         run: rsync -a --delete /tmp/gzh/ 4_theme-formator/vendor/gzh-design/
 
       - name: 注入本地主题
-        run: python3 scripts/inject-local-themes.py
+        run: python3 4_theme-formator/scripts/inject-local-themes.py
 
       - name: 有变化才提交
         run: |

@@ -14,7 +14,8 @@
 ├── 3_image-processor/        # ③ 图片处理：感知哈希去重 + 头图生成（900×383）
 ├── 4_theme-formator/         # ④ 排版：Markdown → 微信友好 HTML
 │   ├── vendor/gzh-design/    #    上游 gzh-design-skill 镜像（GitHub Action 每日自动同步）
-│   └── themes-local/         #    本地自建主题（同步不覆盖）
+│   ├── themes-local/         #    本地自建主题（同步不覆盖）
+│   └── scripts/              #    inject-local-themes.py 本地主题注入
 ├── 5_article-publisher/      # ⑤ 发布：remote-api / api / browser → 公众号草稿箱
 │   ├── scripts/              #    wechat-api.ts 等发布脚本与测试
 │   └── references/           #    发布配置与服务器设置参考文档

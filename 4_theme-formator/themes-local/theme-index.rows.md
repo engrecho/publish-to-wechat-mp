@@ -9,7 +9,7 @@
 # 新增主题流程：
 # 1. 按 vendor/gzh-design/references/theme-generator.md 生成主题组件库
 # 2. 把生成的 theme-{英文标识}.md 放到本目录（4_theme-formator/themes-local/）
-# 3. 在下方登记一行，跑 python3 scripts/inject-local-themes.py 验证
+# 3. 在下方登记一行，跑 python3 4_theme-formator/scripts/inject-local-themes.py 验证
 #
 # 示例（取消注释即可启用）：
 # | 我的品牌 | `#3B82F6` blue | 品牌内容、产品发布 | `references/theme-my-brand.md` | `border-bottom:2px solid #BFDBFE;font-weight:600;` |
