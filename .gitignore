@@ -13,6 +13,9 @@ dist/
 build/
 *.tsbuildinfo
 
+# 流水线中间产物（单篇文章工作目录）
+work/
+
 # 测试与覆盖率
 coverage/
 *.lcov
