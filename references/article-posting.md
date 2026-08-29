@@ -6,16 +6,16 @@
 
 ```bash
 # 发布 Markdown 文章
-${BUN_X} ./scripts/wechat-article.ts --markdown article.md
+${BUN_X} ./publisher/scripts/wechat-article.ts --markdown article.md
 
 # 指定主题
-${BUN_X} ./scripts/wechat-article.ts --markdown article.md --theme grace
+${BUN_X} ./publisher/scripts/wechat-article.ts --markdown article.md --theme grace
 
 # 禁用将普通外部链接转换为底部引用的功能
-${BUN_X} ./scripts/wechat-article.ts --markdown article.md --no-cite
+${BUN_X} ./publisher/scripts/wechat-article.ts --markdown article.md --no-cite
 
 # 显式指定选项
-${BUN_X} ./scripts/wechat-article.ts --markdown article.md --author "作者名" --summary "摘要"
+${BUN_X} ./publisher/scripts/wechat-article.ts --markdown article.md --author "作者名" --summary "摘要"
 ```
 
 ## 参数
@@ -72,9 +72,8 @@ Markdown 模式下，默认会将普通外部链接转换为底部引用，以�
 
 | 脚本 | 用途 |
 |--------|---------|
-| `wechat-article.ts` | 主文章发布脚本 |
-| `md-to-wechat.ts` | Markdown 转 HTML（带占位符） |
-| `md/render.ts` | 带主题的 Markdown 渲染 |
+| `publisher/scripts/wechat-article.ts` | 主文章发布脚本（浏览器） |
+| `typography/scripts/md-to-wechat.ts` | Markdown 转 HTML（带占位符） |
 
 ## 示例会话
 

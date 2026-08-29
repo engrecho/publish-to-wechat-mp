@@ -77,7 +77,7 @@ description: 公众号文案原创化改写器。固定流程为深度改写原�
 **检测方法（本地，必做）**：
 
 ```bash
-bun ../scripts/originality-check.ts work/<slug>/source.md work/<slug>/rewritten.md
+bun ./scripts/originality-check.ts work/<slug>/source.md work/<slug>/rewritten.md
 ```
 
 **通过标准**：

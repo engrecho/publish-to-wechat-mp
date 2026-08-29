@@ -89,14 +89,14 @@ only_fans_can_comment: 0
 
 - API 凭据缺失 → 按 `../references/api-setup.md` 引导设置（写入 `.post-to-wechat/.env`）
 - remote-api 缺 SSH 配置 → 按 `../references/server-setup.md` 引导（白名单 + sshpass/密钥）
-- 飞行前检查（可选）：`bun ../scripts/check-permissions.ts`
+- 飞行前检查（可选）：`bun ./scripts/check-permissions.ts`
 
 ### 步骤 4：发布
 
 **远程 API 方式（默认）**：
 
 ```bash
-bun ../scripts/wechat-api.ts work/<slug>/final.html \
+bun ./scripts/wechat-api.ts work/<slug>/final.html \
   --theme <theme> --remote \
   [--remote-host <host>] [--remote-identity-file <path>] \
   [--title <title>] [--summary <summary>] [--author <author>] \
@@ -106,14 +106,14 @@ bun ../scripts/wechat-api.ts work/<slug>/final.html \
 **API 方式**（本机 IP 在白名单时）：
 
 ```bash
-bun ../scripts/wechat-api.ts <file> --theme <theme> [同上参数]
+bun ./scripts/wechat-api.ts <file> --theme <theme> [同上参数]
 ```
 
 **贴图发布（图文，最多 9 张图）**：
 
 ```bash
-bun ../scripts/wechat-browser.ts --markdown article.md --images ./images/
-bun ../scripts/wechat-browser.ts --title "标题" --content "内容" --image img.png --submit
+bun ./scripts/wechat-browser.ts --markdown article.md --images ./images/
+bun ./scripts/wechat-browser.ts --title "标题" --content "内容" --image img.png --submit
 ```
 
 **draft/add 请求体规则**：

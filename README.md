@@ -10,14 +10,12 @@
 ├── SKILL.md                  # 总编排：阶段调度、产物验收、失败回退
 ├── content-parser/           # ① 解析内容：URL/文件/文本 → source.md
 ├── content-rewriter/         # ② 原创化改写：四层改写 + 原创自检 + 标题/简介生成
+│   └── scripts/              #    originality-check.ts 原创性自检
 ├── image-processor/          # ③ 图片处理：感知哈希去重 + 头图生成（900×383）
 ├── typography/               # ④ 排版：Markdown → 微信友好 HTML
+│   └── scripts/              #    md-to-wechat.ts 渲染脚本
 ├── publisher/                # ⑤ 发布：remote-api / api / browser → 公众号草稿箱
-├── scripts/                  # 可执行脚本
-│   ├── originality-check.ts  #    原创性自检（重复片段/LCS/n-gram 重合率）
-│   ├── wechat-api.ts         #    API 发布（支持 --remote SSH 隧道）
-│   ├── md-to-wechat.ts       #    Markdown → 微信 HTML 渲染
-│   └── ...                   #    浏览器发布、图片处理、权限检查等
+│   └── scripts/              #    wechat-api.ts 等发布脚本与测试
 ├── references/               # 配置与服务器设置参考文档
 ├── server/                   # 服务器端微信发布中转服务
 ├── webhook/                  # 服务器自动部署脚本
@@ -69,10 +67,10 @@ remote-api 方式需先完成服务器侧配置（微信 IP 白名单等），�
 微信没有公开的原创检测查询 API（检测发生在发布/声明原创时，由平台自动比对全网已声明原创内容）。本项目采用四层防护：
 
 1. **预防**：content-rewriter 的四层改写（观点层为主，杜绝纯同义词替换式洗稿）
-2. **本地自检**：`scripts/originality-check.ts`（发布前代理指标）
+2. **本地自检**：`content-rewriter/scripts/originality-check.ts`（发布前代理指标）
 
    ```bash
-   bun scripts/originality-check.ts work/<slug>/source.md work/<slug>/rewritten.md
+   bun content-rewriter/scripts/originality-check.ts work/<slug>/source.md work/<slug>/rewritten.md
    ```
 
    通过标准：≥13 字连续重复片段 0 个、最长公共子串 < 13 字、8-gram 重合率 < 20%

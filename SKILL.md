@@ -42,11 +42,10 @@ metadata:
 | 目录 | 职责 |
 |------|------|
 | `content-parser/` | 阶段①：解析内容 |
-| `content-rewriter/` | 阶段②：原创化改写 + 原创检测 + 标题/简介生成 |
+| `content-rewriter/` | 阶段②：原创化改写 + 原创检测 + 标题/简介生成（脚本在 `content-rewriter/scripts/`） |
 | `image-processor/` | 阶段③：图片去重 + 头图生成 |
-| `typography/` | 阶段④：排版渲染 |
-| `publisher/` | 阶段⑤：发布（remote-api / api / browser） |
-| `scripts/` | 可执行脚本（含 `originality-check.ts` 原创性自检、`wechat-api.ts` 发布等） |
+| `typography/` | 阶段④：排版渲染（脚本在 `typography/scripts/`） |
+| `publisher/` | 阶段⑤：发布（remote-api / api / browser，脚本在 `publisher/scripts/`） |
 | `references/` | 发布配置、服务器设置等参考文档 |
 | `server/` | 服务器端微信发布中转服务 |
 | `webhook/` | 服务器自动部署脚本 |
@@ -99,7 +98,7 @@ metadata:
 用户："把这篇 https://example.com/article 改写发布到公众号"
 
 1. ① content-parser：抓取 URL → `work/ai-job-impact/source.md`
-2. ② content-rewriter：四层改写 → 原创自检（`bun scripts/originality-check.ts`）→ 10 标题评分选 1 → 简介 → `work/ai-job-impact/rewritten.md`
+2. ② content-rewriter：四层改写 → 原创自检（`bun content-rewriter/scripts/originality-check.ts`）→ 10 标题评分选 1 → 简介 → `work/ai-job-impact/rewritten.md`
 3. ③ image-processor：下载图片、pHash 去重、生成 900×383 封面 → `work/ai-job-impact/images/`
 4. ④ typography：渲染 final.html + 预览
 5. ⑤ publisher：remote-api 方式存草稿，报告 media_id 与后台链接

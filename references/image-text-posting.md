@@ -8,13 +8,13 @@
 
 ```bash
 # 使用 Markdown 文件和图片目录发布（标题/内容自动提取）
-${BUN_X} ./scripts/wechat-browser.ts --markdown source.md --images ./images/
+${BUN_X} ./publisher/scripts/wechat-browser.ts --markdown source.md --images ./images/
 
 # 显式指定标题和内容
-${BUN_X} ./scripts/wechat-browser.ts --title "标题" --content "内容" --image img1.png --image img2.png
+${BUN_X} ./publisher/scripts/wechat-browser.ts --title "标题" --content "内容" --image img1.png --image img2.png
 
 # 保存为草稿
-${BUN_X} ./scripts/wechat-browser.ts --markdown source.md --images ./images/ --submit
+${BUN_X} ./publisher/scripts/wechat-browser.ts --markdown source.md --images ./images/ --submit
 ```
 
 ## 参数

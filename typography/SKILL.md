@@ -49,7 +49,7 @@ description: 公众号排版。将改写稿 Markdown 渲染为微信友好 HTML�
 使用仓库根目录的渲染脚本（不要手工拼 HTML）：
 
 ```bash
-bun ../scripts/md-to-wechat.ts <rewritten.md> [--theme <theme>] [--color <color>]
+bun ./scripts/md-to-wechat.ts <rewritten.md> [--theme <theme>] [--color <color>]
 ```
 
 **Markdown 引用默认行为**：普通外部链接自动转换为底部引用（对微信友好）；用户明确要求保留内联链接时加 `--no-cite`。

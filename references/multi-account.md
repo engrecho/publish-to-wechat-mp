@@ -98,9 +98,9 @@ WECHAT_AI_TOOLS_APP_SECRET=your_ai_tools_wechat_app_secret
 所有发布脚本都接受 `--account <alias>`：
 
 ```bash
-${BUN_X} {baseDir}/scripts/wechat-api.ts <file> --theme default --account ai-tools
-${BUN_X} {baseDir}/scripts/wechat-article.ts --markdown <file> --theme default --account main
-${BUN_X} {baseDir}/scripts/wechat-browser.ts --markdown <file> --images ./photos/ --account main
+${BUN_X} {baseDir}/publisher/scripts/wechat-api.ts <file> --theme default --account ai-tools
+${BUN_X} {baseDir}/publisher/scripts/wechat-article.ts --markdown <file> --theme default --account main
+${BUN_X} {baseDir}/publisher/scripts/wechat-browser.ts --markdown <file> --images ./photos/ --account main
 ```
 
 ## 远程 API 发布
@@ -145,10 +145,10 @@ accounts:
 
 ```bash
 # 使用账号自身的 default_publish_method（此处为 remote-api）：
-${BUN_X} {baseDir}/scripts/wechat-api.ts <file> --theme default --account ai-tools
+${BUN_X} {baseDir}/publisher/scripts/wechat-api.ts <file> --theme default --account ai-tools
 
 # 无论 default_publish_method 是什么，强制启用远程模式：
-${BUN_X} {baseDir}/scripts/wechat-api.ts <file> --theme default --account main --remote --remote-host other-server.example.com
+${BUN_X} {baseDir}/publisher/scripts/wechat-api.ts <file> --theme default --account main --remote --remote-host other-server.example.com
 ```
 
 ### 安全注意事项
