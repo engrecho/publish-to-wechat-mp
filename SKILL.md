@@ -34,7 +34,7 @@ metadata:
 4_theme-formator       ④ 排版 → final.html（微信格式 HTML + 预览）
    │
    ▼
-5_publisher             ⑤ 发布 → 公众号草稿箱（media_id + 后台链接）
+5_article-publisher    ⑤ 发布 → 公众号草稿箱（media_id + 后台链接）
 ```
 
 > 目录统一按 `N_` 数字前缀排序：`1_`~`5_` 对应流水线 5 个阶段，序号即执行顺序，看目录名即可知道全流程。
@@ -48,7 +48,7 @@ metadata:
 | `2_content-rewriter/` | 阶段②：原创化改写 + 原创检测 + 标题/简介生成（脚本在 `2_content-rewriter/scripts/`） |
 | `3_image-processor/` | 阶段③：图片去重 + 头图生成 |
 | `4_theme-formator/` | 阶段④：排版渲染（核心流程在 `4_theme-formator/vendor/gzh-design/SKILL.md`，本地主题在 `4_theme-formator/themes-local/`） |
-| `5_publisher/` | 阶段⑤：发布（remote-api / api / browser，脚本在 `5_publisher/scripts/`，配置文档在 `5_publisher/references/`） |
+| `5_article-publisher/` | 阶段⑤：发布（remote-api / api / browser，脚本在 `5_article-publisher/scripts/`，配置文档在 `5_article-publisher/references/`） |
 | `server/` | 服务器端微信发布中转服务（含部署脚本 `server/deploy.sh` 与部署说明） |
 | `work/<slug>/` | 单篇文章的工作目录（中间产物，不入库） |
 
@@ -80,7 +80,7 @@ metadata:
 | ② 标题/简介已产出（10 候选评分选 1） | 必须产出才能进入③ |
 | ③ 重复图已剔除、cover.jpg 已生成 | 回③补做 |
 | ④ final.html 预览无溢出、无死链 | 回④修排版 |
-| ⑤ 草稿保存成功（拿到 media_id） | 按 5_publisher 常见问题排查 |
+| ⑤ 草稿保存成功（拿到 media_id） | 按 5_article-publisher 常见问题排查 |
 
 ### 4. 失败回退
 
@@ -102,12 +102,12 @@ metadata:
 2. ② 2_content-rewriter：四层改写 → 原创自检（`bun 2_content-rewriter/scripts/originality-check.ts`）→ 10 标题评分选 1 → 简介 → `work/ai-job-impact/rewritten.md`
 3. ③ 3_image-processor：下载图片、pHash 去重、生成 900×383 封面 → `work/ai-job-impact/images/`
 4. ④ 4_theme-formator：渲染 final.html + 预览
-5. ⑤ 5_publisher：remote-api 方式存草稿，报告 media_id 与后台链接
+5. ⑤ 5_article-publisher：remote-api 方式存草稿，报告 media_id 与后台链接
 
 ## 环境要求
 
 - Bun（`brew install oven-sh/bun/bun` 或 `npm install -g bun`）
-- 发布配置 `.post-to-wechat/EXTEND.md`（详见 5_publisher/SKILL.md 与 5_publisher/references/）
+- 发布配置 `.post-to-wechat/EXTEND.md`（详见 5_article-publisher/SKILL.md 与 5_article-publisher/references/）
 - remote-api 方式需服务器 IP（62.234.16.218）已加入微信 IP 白名单
 
 ## 语言

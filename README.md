@@ -15,7 +15,7 @@
 ├── 4_theme-formator/         # ④ 排版：Markdown → 微信友好 HTML
 │   ├── vendor/gzh-design/    #    上游 gzh-design-skill 镜像（GitHub Action 每日自动同步）
 │   └── themes-local/         #    本地自建主题（同步不覆盖）
-├── 5_publisher/              # ⑤ 发布：remote-api / api / browser → 公众号草稿箱
+├── 5_article-publisher/      # ⑤ 发布：remote-api / api / browser → 公众号草稿箱
 │   ├── scripts/              #    wechat-api.ts 等发布脚本与测试
 │   └── references/           #    发布配置与服务器设置参考文档
 ├── server/                   # 微信发布中转服务（部署脚本 + 说明）
@@ -42,7 +42,7 @@ remote_publish_strict_host_key_checking: accept-new
 EOF
 ```
 
-remote-api 方式需先完成服务器侧配置（微信 IP 白名单等），见 `5_publisher/references/server-setup.md`。
+remote-api 方式需先完成服务器侧配置（微信 IP 白名单等），见 `5_article-publisher/references/server-setup.md`。
 
 ### 2. 全流程
 
@@ -88,7 +88,7 @@ remote-api 方式需先完成服务器侧配置（微信 IP 白名单等），�
 | api | 本机 IP 在白名单时直连 |
 | browser | Chrome 会话模拟（贴图发布） |
 
-详见 `5_publisher/SKILL.md`。
+详见 `5_article-publisher/SKILL.md`。
 
 ## 服务器与部署
 
@@ -99,6 +99,6 @@ remote-api 方式需先完成服务器侧配置（微信 IP 白名单等），�
 ## 更多文档
 
 - 各阶段用法：对应子目录的 SKILL.md
-- API 凭据：`5_publisher/references/api-setup.md`
-- 服务器设置：`5_publisher/references/server-setup.md`
-- 多账号：`5_publisher/references/multi-account.md`
+- API 凭据：`5_article-publisher/references/api-setup.md`
+- 服务器设置：`5_article-publisher/references/server-setup.md`
+- 多账号：`5_article-publisher/references/multi-account.md`
