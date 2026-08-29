@@ -90,7 +90,7 @@ options:
     description: "慢速，需要 Chrome 和登录会话"
 ```
 
-如果用户选择了 `remote-api`，则提示输入 `remote_publish_host`（默认：`62.234.16.218`）、`remote_publish_user`（默认：`root`），以及 `remote_publish_password`（密码认证，通过 sshpass）或 `remote_publish_identity_file`（SSH 密钥认证，推荐）。这些也可以稍后在 EXTEND.md 中填写。引导用户查看 `references/server-setup.md` 了解 IP 白名单和 sshpass 安装步骤。
+如果用户选择了 `remote-api`，则提示输入 `remote_publish_host`（默认：`62.234.16.218`）、`remote_publish_user`（默认：`root`），以及 `remote_publish_password`（密码认证，通过 sshpass）或 `remote_publish_identity_file`（SSH 密钥认证，推荐）。这些也可以稍后在 EXTEND.md 中填写。引导用户查看 `./server-setup.md` 了解 IP 白名单和 sshpass 安装步骤。
 
 ### 问题 4：默认作者
 
@@ -153,7 +153,7 @@ options:
 2. 写入 EXTEND.md
 3. 确认："偏好设置已保存到 [path]"
 4. 继续到步骤 0（加载已保存的偏好设置）
-5. 如果选择了 `remote-api`，提醒："请参阅 references/server-setup.md 完成服务器侧配置（IP 白名单、SSH 可达性、sshpass 安装）"
+5. 如果选择了 `remote-api`，提醒："请参阅 ./server-setup.md 完成服务器侧配置（IP 白名单、SSH 可达性、sshpass 安装）"
 
 ## EXTEND.md 模板
 

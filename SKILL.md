@@ -45,8 +45,7 @@ metadata:
 | `content-rewriter/` | 阶段②：原创化改写 + 原创检测 + 标题/简介生成（脚本在 `content-rewriter/scripts/`） |
 | `image-processor/` | 阶段③：图片去重 + 头图生成 |
 | `typography/` | 阶段④：排版渲染（脚本在 `typography/scripts/`） |
-| `publisher/` | 阶段⑤：发布（remote-api / api / browser，脚本在 `publisher/scripts/`） |
-| `references/` | 发布配置、服务器设置等参考文档 |
+| `publisher/` | 阶段⑤：发布（remote-api / api / browser，脚本在 `publisher/scripts/`，配置文档在 `publisher/references/`） |
 | `server/` | 服务器端微信发布中转服务 |
 | `webhook/` | 服务器自动部署脚本 |
 | `work/<slug>/` | 单篇文章的工作目录（中间产物，不入库） |
@@ -106,7 +105,7 @@ metadata:
 ## 环境要求
 
 - Bun（`brew install oven-sh/bun/bun` 或 `npm install -g bun`）
-- 发布配置 `.post-to-wechat/EXTEND.md`（详见 publisher/SKILL.md 与 references/）
+- 发布配置 `.post-to-wechat/EXTEND.md`（详见 publisher/SKILL.md 与 publisher/references/）
 - remote-api 方式需服务器 IP（62.234.16.218）已加入微信 IP 白名单
 
 ## 语言

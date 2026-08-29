@@ -69,13 +69,13 @@ only_fans_can_comment: 0
 
 **值优先级**：CLI 参数 → frontmatter → EXTEND.md → 技能默认值。
 
-**多账号**：EXTEND.md 的 `accounts:` 块支持多公众号，详见 `../references/multi-account.md`。
+**多账号**：EXTEND.md 的 `accounts:` 块支持多公众号，详见 `./references/multi-account.md`。
 
 ## 发布流程
 
 ### 步骤 1：加载 EXTEND.md
 
-未找到时先执行首次设置（`../references/config/first-time-setup.md`）。
+未找到时先执行首次设置（`./references/config/first-time-setup.md`）。
 
 ### 步骤 2：确定输入
 
@@ -87,8 +87,8 @@ only_fans_can_comment: 0
 
 ### 步骤 3：校验凭据
 
-- API 凭据缺失 → 按 `../references/api-setup.md` 引导设置（写入 `.post-to-wechat/.env`）
-- remote-api 缺 SSH 配置 → 按 `../references/server-setup.md` 引导（白名单 + sshpass/密钥）
+- API 凭据缺失 → 按 `./references/api-setup.md` 引导设置（写入 `.post-to-wechat/.env`）
+- remote-api 缺 SSH 配置 → 按 `./references/server-setup.md` 引导（白名单 + sshpass/密钥）
 - 飞行前检查（可选）：`bun ./scripts/check-permissions.ts`
 
 ### 步骤 4：发布
@@ -162,9 +162,9 @@ bun ./scripts/wechat-browser.ts --title "标题" --content "内容" --image img.
 
 | 文件 | 内容 |
 |------|------|
-| `../references/api-setup.md` | API 凭据引导设置 |
-| `../references/server-setup.md` | 服务器侧设置：IP 白名单、SSH、sshpass |
-| `../references/article-posting.md` | 文章主题、图片处理 |
-| `../references/image-text-posting.md` | 贴图参数、自动压缩 |
-| `../references/multi-account.md` | 多账号兼容性、凭据、CLI 用法 |
-| `../references/config/first-time-setup.md` | 首次 EXTEND.md 设置 |
+| `./references/api-setup.md` | API 凭据引导设置 |
+| `./references/server-setup.md` | 服务器侧设置：IP 白名单、SSH、sshpass |
+| `./references/article-posting.md` | 文章主题、图片处理 |
+| `./references/image-text-posting.md` | 贴图参数、自动压缩 |
+| `./references/multi-account.md` | 多账号兼容性、凭据、CLI 用法 |
+| `./references/config/first-time-setup.md` | 首次 EXTEND.md 设置 |

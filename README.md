@@ -15,8 +15,8 @@
 ├── typography/               # ④ 排版：Markdown → 微信友好 HTML
 │   └── scripts/              #    md-to-wechat.ts 渲染脚本
 ├── publisher/                # ⑤ 发布：remote-api / api / browser → 公众号草稿箱
-│   └── scripts/              #    wechat-api.ts 等发布脚本与测试
-├── references/               # 配置与服务器设置参考文档
+│   ├── scripts/              #    wechat-api.ts 等发布脚本与测试
+│   └── references/           #    发布配置与服务器设置参考文档
 ├── server/                   # 服务器端微信发布中转服务
 ├── webhook/                  # 服务器自动部署脚本
 └── work/<slug>/              # 单篇文章工作目录（中间产物，不入库）
@@ -40,7 +40,7 @@ remote_publish_strict_host_key_checking: accept-new
 EOF
 ```
 
-remote-api 方式需先完成服务器侧配置（微信 IP 白名单等），见 `references/server-setup.md`。
+remote-api 方式需先完成服务器侧配置（微信 IP 白名单等），见 `publisher/references/server-setup.md`。
 
 ### 2. 全流程
 
@@ -96,6 +96,6 @@ remote-api 方式需先完成服务器侧配置（微信 IP 白名单等），�
 ## 更多文档
 
 - 各阶段用法：对应子目录的 SKILL.md
-- API 凭据：`references/api-setup.md`
-- 服务器设置：`references/server-setup.md`
-- 多账号：`references/multi-account.md`
+- API 凭据：`publisher/references/api-setup.md`
+- 服务器设置：`publisher/references/server-setup.md`
+- 多账号：`publisher/references/multi-account.md`
