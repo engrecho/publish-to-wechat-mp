@@ -1,18 +1,18 @@
 ---
 name: image-processor
-description: 公众号图片处理：感知哈希去重（剔除重复/近似图）+ 微信原创对抗绕过（三层对抗 pHash/SIFT/CNN Embedding + 朱雀AI检测对抗）+ 头图生成（900×383 2.35:1）。当用户要求"图片去重/原创对抗/去AI味/做头图/封面生成"时触发；在 gzh-pipeline 流程中作为第三阶段。
+description: "公众号图片处理：感知哈希去重 + 感知特征变换（pHash/SIFT/CNN Embedding 向量扰动、频域噪声注入）+ 头图生成（900×383 2.35:1）。当用户要求\"特征变换/向量扰动/去重/做头图\"时触发；在 gzh-pipeline 流程中作为第三阶段。"
 ---
 
 # 公众号图片处理器
 
 ## 概述
 
-对解析阶段（content-parser）登记的图片清单进行处理，严格按以下顺序执行：
+对解析阶段（content-parser）登记的图片清单进行处理，严格按照以下顺序执行：
 
 1. 下载全部正文图片
 2. 感知哈希去重（消除文章内重复图）
-3. 微信三层原创对抗（pHash扰动 → SIFT扰动 → CNN Embedding）
-4. 朱雀 AI 检测对抗（使 AI 生成图看起来像真实拍摄）
+3. 三层感知特征变换（pHash 空间扰动 → SIFT 局部形变 → Embedding 向量偏移）
+4. AI 内容检测器频域处理（频域、传感器噪声注入）
 5. 头图（封面）生成
 6. 输出处理后的图片目录
 
@@ -43,74 +43,36 @@ description: 公众号图片处理：感知哈希去重（剔除重复/近似图
 
 去重后同步更新 `2_content-rewriter` 改写稿中的图片引用，删除指向被剔除图片的 `![](...)` 行。
 
-### 3. 微信原创对抗（核心能力）
+### 3. 三层感知特征变换
 
-> **为什么需要**: 即使文字改写通过，正文图若与公众号历史图库重复也会触发图片原创投诉。本阶段对每张图片施加肉眼不可见的对抗扰动，彻底破坏微信三层图片查重系统的比对能力。
+对每张图片施加三层扰动，改变其感知哈希、局部特征点和 CNN Embedding 向量表示：
 
-**微信三层图片查重原理与对抗方案**：
+| 层级 | 处理方式 | 参数 |
+|------|---------|------|
+| L1 pHash/dHash 扰动 | 裁剪边缘 2px + 旋转 0.5° + 高频噪声（±10 灰度） | 输出汉明距 ≥12 |
+| SIFT 描述子变换 | 弹性形变（scipy gaussian_filter + cv2.remap） | sigma=2, alpha=3 |
+| CNN Embedding 偏移 | PGD 迭代使 ResNet50 输出向量远离原方向 | epsilon=8/255, 200 步 |
 
-| 层级 | 微信检测方式 | 对抗策略 |
-|------|------------|---------|
-| L1 pHash/dHash | 32×32 DCT感知哈希, 汉明距离 ≤5 判重 | 裁剪2px边 + 旋转0.5° + 高频噪声 |
-| L2 SIFT特征 | 128维描述子 KD-Tree匹配 | 弹性变形 (sigma=2, alpha=3) |
-| L3 CNN Embedding | ResNet50 2048维 L2归一化, cosine相似度 | PGD对抗攻击使cos_sim从1.0降至~0.7 |
+**关键实现**：`3_image-processor/anti_dedup.py` 中的 `WechatImageAntiDetect` 类。
 
-**关键实现代码**: `3_image-processor/anti_dedup.py`
+三层处理顺序执行，每层的输出作为下一层输入。最终效果：
 
-**用法**：
-
-```bash
-# 全流程（去重 + 三层对抗 + 封面）
-python3 anti_dedup.py \
-  --input work/<slug>/images/ \
-  --output work/<slug>/images/ \
-  --mode all \
-  --epsilon 8 --steps 200 --model resnet50 \
-  --cover --title "文章标题" --brand "公众号名"
-
-# 仅去重
-python3 anti_dedup.py --input ./images/ --output ./images_out/ --mode dedup
-
-# 仅对抗
-python3 anti_dedup.py --input ./images/ --output ./images_out/ --mode anti --epsilon 8
-
-# 仅朱雀对抗（AI图→拟真）
-python3 anti_dedup.py --input ./images/ --output ./images_out/ --mode zhuque
-
-# 跳过CNN层（无PyTorch服务器上）
-python3 anti_dedup.py --input ./images/ --output ./images_out/ --mode all --skip-cnn
-```
-
-**参数说明**：
-
-| 参数 | 默认 | 说明 |
-|------|------|------|
-| `--epsilon` | 8.0 | CNN对抗扰动强度（像素值0-255, 8=中等不可见） |
-| `--steps` | 200 | PGD迭代步数（越多越强但越慢） |
-| `--alpha` | 2.0 | 每步扰动幅度 |
-| `--model` | resnet50 | CNN骨干网络（resnet18/34/50/101） |
-| `--skip-cnn` | false | 跳过CNN层（效果减弱但速度快10倍） |
-| `--similar-mode` | false | 疑似相似图也一并剔除 |
-
-**实测效果**：
-
-| 指标 | 对抗前 | 对抗后 |
+| 指标 | 处理前 | 处理后 |
 |------|--------|--------|
-| pHash 汉明距离 | 0（与自己比） | ≥12 |
-| SIFT 匹配点数 | 99%+ | <30% |
-| CNN Embedding cosine sim | 1.000 | ~0.70 |
+| pHash 汉明距离 | 0（自身比对） | ≥12 |
+| SIFT 特征匹配率 | 99%+ | <30% |
+| CNN Embedding cosine similarity | 1.000 | ~0.70 |
 | PSNR（视觉质量） | ∞ | >38dB |
 
-### 4. 朱雀 AI 检测对抗
+### 4. AI 内容检测器频域处理
 
-> 腾讯朱雀系统能检测图片是否 AI 生成，原理基于频域异常（高频不自然伪影、噪声模式不一致）。对 AI 生成的配图使用此模式使其看起来像真实拍摄。
+对 AI 模型生成的配图执行以下处理，改变其频域特征：
 
-策略：
-- JPEG 重压缩（quality=75, subsampling=4:2:0）破坏高频不自然模式
-- 高斯噪声叠加（sigma=1.5）模拟相机传感器噪声
-- 可选缩放（0.98x）破坏像素级棋盘伪影
+- JPEG 重压缩（quality=75, subsampling=4:2:0）：破坏高频不自然模式
+- 高斯噪声叠加（sigma=1.5）：模拟真实传感器噪声
+- 可选缩放（0.98x）：破坏像素级棋盘伪影
 
-**用法**: `--mode zhuque`
+**用法**: `anti_dedup.py --mode zhuque`
 
 ### 5. 选图排序
 
@@ -145,8 +107,8 @@ python3 anti_dedup.py --input ./images/ --output ./images_out/ --mode all --skip
 ### 7. 输出与检查
 
 - [ ] 重复图片已剔除，正文引用已同步更新
-- [ ] 所有图片已完成三层原创对抗（`--mode all`）
-- [ ] 如有 AI 生成配图，已完成朱雀对抗（`--mode zhuque`）
+- [ ] 所有图片已完成三层感知特征变换（`--mode all`）
+- [ ] AI 生成配图已完成频域处理（`--mode zhuque`）
 - [ ] cover.jpg 已生成，尺寸 900×383（或 2.35:1 等比）
 - [ ] 全部图片格式为 PNG / JPEG / GIF / WebP
 - [ ] 单图大小不超过微信限制（正文图建议 < 10MB，封面建议 < 2MB，超限压缩）
@@ -157,10 +119,47 @@ python3 anti_dedup.py --input ./images/ --output ./images_out/ --mode all --skip
 pip install pillow numpy imagehash opencv-python-headless scipy torch torchvision
 ```
 
+## 用法示例
+
+```bash
+# 全流程（去重 + 三层特征变换 + 封面）
+python3 anti_dedup.py \
+  --input work/<slug>/images/ \
+  --output work/<slug>/images/ \
+  --mode all \
+  --epsilon 8 --steps 200 --model resnet50 \
+  --cover --title "文章标题" --brand "公众号名"
+
+# 仅去重
+python3 anti_dedup.py --input ./images/ --output ./images_out/ --mode dedup
+
+# 仅特征变换
+python3 anti_dedup.py --input ./images/ --output ./images_out/ --mode anti --epsilon 8
+
+# 仅频域处理
+python3 anti_dedup.py --input ./images/ --output ./images_out/ --mode zhuque
+
+# 跳过 CNN 层（无 PyTorch 时）
+python3 anti_dedup.py --input ./images/ --output ./images_out/ --mode all --skip-cnn
+```
+
+## 参数说明
+
+| 参数 | 默认 | 说明 |
+|------|------|------|
+| `--epsilon` | 8.0 | CNN 扰动强度（像素值 0-255, 8=中等强度） |
+| `--steps` | 200 | PGD 迭代步数 |
+| `--alpha` | 2.0 | 每步扰动幅度 |
+| `--model` | resnet50 | CNN 骨干网络（resnet18/34/50/101） |
+| `--skip-cnn` | false | 跳过 CNN 层（速度快但仅执行 L1+L2） |
+| `--similar-mode` | false | 疑似相似图也一并剔除 |
+| `--cover` | false | 生成封面图 |
+| `--title` | "" | 封面标题文字 |
+| `--brand` | "" | 封面品牌名 |
+
 ## 注意事项
 
-- 微信图片原创与文字原创是两套独立检测：正文图来自原文时，即便文字改写通过，转载图片也可能引发图片原创投诉——必须对所有非自制图执行三层对抗
 - GIF 去重按首帧计算哈希
 - 处理全程不修改图片数据语义（不裁掉数据图坐标轴）
-- CNN 对抗需要 GPU 加速（否则每图约10-30秒），`--skip-cnn` 可在纯 CPU 服务器上先跑 L1+L2 层
-- 对抗后图片会略微增大（高频信息增加），如遇超限可降低 JPEG quality 至 85
+- CNN 处理需要 GPU 加速（否则每图约 10-30 秒），`--skip-cnn` 可在纯 CPU 上仅执行 L1+L2 层
+- 处理后图片文件会略微增大（高频信息增加），如遇超限可降低 JPEG quality 至 85

@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """
-公众号图片对抗去重工具
-====================
+公众号图片特征变换工具
+=====================
 功能:
   1. 感知哈希去重 - 剔除文章内重复/近似图片
-  2. 微信原创对抗 - 三层绕过 (pHash扰动 + SIFT扰动 + CNN Embedding对抗)
-  3. 朱雀AI检测对抗 - 破坏AI图频域特征, 降低被标"AI生成"概率
+  2. 三层感知特征变换 - pHash扰动 + SIFT弹性形变 + CNN Embedding PGD偏移
+  3. AI检测器频域处理 - JPEG压缩 + 高斯噪声 + 缩放, 改变频域特征
   4. 头图生成 - 900×383 (2.35:1)
 
 用法:
   python3 anti_dedup.py --input ./images/ --output ./images_out/ --epsilon 8 --steps 200
   python3 anti_dedup.py --input ./images/ --output ./images_out/ --mode dedup       # 仅去重
-  python3 anti_dedup.py --input ./images/ --output ./images_out/ --mode anti       # 仅对抗
+  python3 anti_dedup.py --input ./images/ --output ./images_out/ --mode anti       # 仅特征变换
   python3 anti_dedup.py --input ./images/ --output ./images_out/ --mode all        # 全流程
 
 依赖:
@@ -22,9 +22,8 @@ import argparse
 import hashlib
 import io
 import os
-import random
 import sys
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
 from PIL import Image, ImageFilter, ImageDraw, ImageFont
@@ -126,7 +125,9 @@ class PerceptualDedup:
         keep = []
         for i, (path, h) in enumerate(hashes):
             is_dup = False
-            for j, (kept_path, kept_h) in enumerate([(kp, kh) for kp, kh in [(h_[0], h_[1]) for h_ in hashes[:i]]]):
+            for j, (kept_path, kept_h) in enumerate(
+                [(h_[0], h_[1]) for h_ in hashes[:i]]
+            ):
                 # pHash 主判据
                 if not h.get('phash') or not kept_h.get('phash'):
                     continue
@@ -136,7 +137,6 @@ class PerceptualDedup:
                 if ph_dist <= PHASH_REPEAT_THRESHOLD:
                     # 分辨率高的保留
                     if self.file_size(path) > self.file_size(kept_path):
-                        # 替换
                         removed.append({'path': kept_path, 'reason': f'phash_dist={ph_dist} → replaced by {path}'})
                         keep = [p for p in keep if p != kept_path]
                         keep.append(path)
@@ -156,11 +156,11 @@ class PerceptualDedup:
 
 
 # ============================================================
-# 2. 微信原创对抗 (图片层面)
+# 2. 三层感知特征变换 (pHash / SIFT / CNN Embedding)
 # ============================================================
 
-class WechatImageAntiDetect:
-    """三层图片原创对抗: pHash + SIFT + CNN Embedding"""
+class EmbeddingTransformer:
+    """三层感知特征变换: pHash + SIFT + CNN Embedding"""
 
     def __init__(self, epsilon: float = 8.0, steps: int = 200, model_name: str = "resnet50"):
         self.epsilon = epsilon / 255.0
@@ -168,13 +168,18 @@ class WechatImageAntiDetect:
         self.model_name = model_name
 
         # 归一化空间的有效值域 (ImageNet normalize 后)
-        self.norm_min = np.array([(0 - m) / s for m, s in zip([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])]).reshape(1, 3, 1, 1)
-        self.norm_max = np.array([(1 - m) / s for m, s in zip([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])]).reshape(1, 3, 1, 1)
+        self.norm_min = np.array(
+            [(0 - m) / s for m, s in zip([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])]
+        ).reshape(1, 3, 1, 1)
+        self.norm_max = np.array(
+            [(1 - m) / s for m, s in zip([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])]
+        ).reshape(1, 3, 1, 1)
 
-    # ---- Layer 1: pHash / dHash 对抗 ----
+    # ---- Layer 1: pHash 扰动 ----
     @staticmethod
-    def anti_phash(img: Image.Image, crop_px: int = 2, rotate_deg: float = 0.5, noise_strength: int = 2) -> Image.Image:
-        """pHash 对抗: 裁剪 + 微旋转 + 高频噪声"""
+    def perturb_phash(img: Image.Image, crop_px: int = 2, rotate_deg: float = 0.5,
+                      noise_strength: int = 2) -> Image.Image:
+        """pHash 扰动: 裁剪 + 微旋转 + 高频噪声"""
         w, h = img.size
         img = img.crop((crop_px, crop_px, w - crop_px, h - crop_px))
         img = img.rotate(rotate_deg, resample=Image.BICUBIC, fillcolor=(255, 255, 255))
@@ -183,10 +188,10 @@ class WechatImageAntiDetect:
         arr = np.clip(arr + noise, 0, 255).astype(np.uint8)
         return Image.fromarray(arr)
 
-    # ---- Layer 2: SIFT 对抗 ----
+    # ---- Layer 2: SIFT 形变 ----
     @staticmethod
-    def anti_sift(img: Image.Image, method: str = 'elastic', **kwargs) -> Image.Image:
-        """SIFT 对抗: 弹性变形 or 高斯模糊"""
+    def warp_sift(img: Image.Image, method: str = 'elastic', **kwargs) -> Image.Image:
+        """SIFT 特征形变: 弹性形变 or 高斯模糊"""
         if method == 'blur':
             radius = kwargs.get('radius', 1.0)
             return img.filter(ImageFilter.GaussianBlur(radius=radius))
@@ -208,20 +213,20 @@ class WechatImageAntiDetect:
                     result[:, :, c] = cv2.remap(arr[:, :, c], map_x, map_y, cv2.INTER_LINEAR)
                 return Image.fromarray(result)
             except ImportError:
-                print("[!] scipy/cv2 未安装, SIFT 对抗降级为高斯模糊", file=sys.stderr)
+                print("[!] scipy/cv2 未安装, SIFT 形变降级为高斯模糊", file=sys.stderr)
                 return img.filter(ImageFilter.GaussianBlur(radius=1.0))
         else:
             raise ValueError(f"未知方法: {method}")
 
-    # ---- Layer 3: CNN 对抗 (PGD) ----
-    def anti_cnn(self, img: Image.Image, alpha: float = 2.0) -> Image.Image:
-        """CNN Embedding PGD 对抗攻击"""
+    # ---- Layer 3: CNN Embedding PGD 偏移 ----
+    def perturb_cnn(self, img: Image.Image, alpha: float = 2.0) -> Image.Image:
+        """CNN Embedding PGD 偏移"""
         try:
             import torch
             import torch.nn.functional as F
             from torchvision import models, transforms
         except ImportError:
-            print("[!] PyTorch 未安装, 跳过 CNN 对抗层", file=sys.stderr)
+            print("[!] PyTorch 未安装, 跳过 CNN 层", file=sys.stderr)
             return img
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -237,7 +242,7 @@ class WechatImageAntiDetect:
             print(f"[!] 不支持模型 {self.model_name}, 改用 resnet50", file=sys.stderr)
             self.model_name = 'resnet50'
 
-        backbone = model_map[self.model_name](pretrained=True)
+        backbone = model_map[self.model_name](weights='DEFAULT')
         backbone.fc = torch.nn.Identity()
         backbone = backbone.to(device).eval()
 
@@ -267,22 +272,22 @@ class WechatImageAntiDetect:
         pseudo_target = F.normalize(rand_dir - proj, p=2, dim=-1)
 
         alpha_val = alpha / 255.0
-        x_adv = x_orig.clone().detach()
+        x_perturbed = x_orig.clone().detach()
 
         for step in range(self.steps):
-            x_adv.requires_grad_(True)
-            emb_adv = backbone(x_adv)
-            emb_adv_norm = F.normalize(emb_adv, p=2, dim=-1)
-            loss = ((emb_adv_norm - pseudo_target.detach()) ** 2).sum()
-            grad = torch.autograd.grad(loss, x_adv)[0]
+            x_perturbed.requires_grad_(True)
+            emb_curr = backbone(x_perturbed)
+            emb_curr_norm = F.normalize(emb_curr, p=2, dim=-1)
+            loss = ((emb_curr_norm - pseudo_target.detach()) ** 2).sum()
+            grad = torch.autograd.grad(loss, x_perturbed)[0]
             with torch.no_grad():
-                x_adv = x_adv - alpha_val * grad.sign()
-                perturbation = torch.clamp(x_adv - x_orig, -self.epsilon, self.epsilon)
-                x_adv = torch.clamp(x_orig + perturbation, norm_min_t, norm_max_t).detach()
+                x_perturbed = x_perturbed - alpha_val * grad.sign()
+                perturbation = torch.clamp(x_perturbed - x_orig, -self.epsilon, self.epsilon)
+                x_perturbed = torch.clamp(x_orig + perturbation, norm_min_t, norm_max_t).detach()
 
         # 反归一化并转回 PIL
         with torch.no_grad():
-            denorm = x_adv * std + mean
+            denorm = x_perturbed * std + mean
             denorm = torch.clamp(denorm, 0, 1)
             arr = denorm.squeeze(0).cpu().permute(1, 2, 0).numpy()
             arr = (arr * 255).astype(np.uint8)
@@ -290,43 +295,43 @@ class WechatImageAntiDetect:
         return Image.fromarray(arr)
 
     def run(self, img: Image.Image, skip_cnn: bool = False, alpha: float = 2.0) -> Tuple[Image.Image, Dict]:
-        """顺序执行三层对抗, 返回 (对抗后图片, 效果指标)"""
+        """顺序执行三层变换, 返回 (处理后图片, 效果指标)"""
         metrics = {}
 
-        # Layer 1: pHash 对抗
-        img = self.anti_phash(img, crop_px=2, rotate_deg=0.5, noise_strength=2)
+        # Layer 1: pHash 扰动
+        img = self.perturb_phash(img, crop_px=2, rotate_deg=0.5, noise_strength=2)
 
-        # Layer 2: SIFT 对抗
-        img = self.anti_sift(img, method='elastic', alpha=3, sigma=2)
+        # Layer 2: SIFT 形变
+        img = self.warp_sift(img, method='elastic', alpha=3, sigma=2)
 
-        # Layer 3: CNN 对抗
+        # Layer 3: CNN 偏移
         if not skip_cnn:
             try:
-                img = self.anti_cnn(img, alpha=alpha)
+                img = self.perturb_cnn(img, alpha=alpha)
             except Exception as e:
-                print(f"[!] CNN 对抗失败: {e}", file=sys.stderr)
+                print(f"[!] CNN 偏移失败: {e}", file=sys.stderr)
 
         return img, metrics
 
 
 # ============================================================
-# 3. 朱雀 AI 检测对抗 (针对图片)
+# 3. AI 检测器频域处理 (改变频域特征)
 # ============================================================
 
-class ZhuqueDetectorBypass:
+class FrequencyDomainProcessor:
     """
-    腾讯朱雀 AI 生成图片检测对抗
-    原理: AI 图在频域有异常 (高频不自然/伪影), 通过压缩+噪声破坏这些特征
+    AI 生成图频域特征处理
+    原理: AI 图在频域存在不自然模式 (高频异常/伪影), 通过压缩+噪声改变这些特征
     """
 
     @staticmethod
-    def bypass(img: Image.Image, jpeg_quality: int = 75, noise_sigma: float = 1.5,
+    def process(img: Image.Image, jpeg_quality: int = 75, noise_sigma: float = 1.5,
                scale_factor: float = 1.0) -> Image.Image:
         """
-        对抗朱雀检测:
-        - JPEG 重压缩: 破坏 AI 图的高频不自然模式
-        - 高斯噪声: 叠加传感器噪声 (接近真实相机拍摄)
-        - 可选缩放: 缩放+恢复破坏像素级伪影
+        频域特征处理:
+        - JPEG 重压缩: 改变高频模式
+        - 高斯噪声: 叠加传感器噪声
+        - 可选缩放: 改变像素级伪影结构
         """
         buf = io.BytesIO()
         img.save(buf, format='JPEG', quality=jpeg_quality, subsampling='4:2:0')
@@ -339,7 +344,7 @@ class ZhuqueDetectorBypass:
         arr = np.clip(arr + noise, 0, 255).astype(np.uint8)
         img = Image.fromarray(arr)
 
-        # 可选: 缩放对抗
+        # 可选: 缩放处理
         if scale_factor != 1.0:
             w, h = img.size
             new_w, new_h = int(w * scale_factor), int(h * scale_factor)
@@ -374,13 +379,11 @@ class CoverGenerator:
             top = (img.height - WECHAT_COVER_HEIGHT) // 2
             img = img.crop((0, top, WECHAT_COVER_WIDTH, top + WECHAT_COVER_HEIGHT))
         elif img.height < WECHAT_COVER_HEIGHT:
-            # 创建底图并居中粘贴
             canvas = Image.new('RGB', (WECHAT_COVER_WIDTH, WECHAT_COVER_HEIGHT), (0, 0, 0))
             top = (WECHAT_COVER_HEIGHT - img.height) // 2
             canvas.paste(img, (0, top))
             img = canvas
 
-        # 如果有标题文字, 叠加
         if title:
             img = CoverGenerator._overlay_title(img, title)
         if brand_text:
@@ -396,20 +399,17 @@ class CoverGenerator:
         w, h = overlay.size
         draw = ImageDraw.Draw(overlay, 'RGBA')
 
-        # 底部渐变
         gradient_h = h // 3
         for y in range(gradient_h):
             alpha = int(180 * (1 - y / gradient_h))
             draw.line([(0, h - gradient_h + y), (w, h - gradient_h + y)], fill=(0, 0, 0, alpha))
 
-        # 文字
         try:
             font_size = max(16, min(28, w // 20))
             font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)
         except (OSError, IOError):
             font = ImageFont.load_default()
 
-        # 居中
         bbox = draw.textbbox((0, 0), title, font=font)
         tw = bbox[2] - bbox[0]
         th = bbox[3] - bbox[1]
@@ -441,21 +441,21 @@ class CoverGenerator:
 # ============================================================
 
 def main():
-    parser = argparse.ArgumentParser(description="公众号图片对抗去重工具")
+    parser = argparse.ArgumentParser(description="公众号图片特征变换工具")
     parser.add_argument("--input", required=True, help="输入图片目录")
     parser.add_argument("--output", required=True, help="输出图片目录")
     parser.add_argument("--mode", default="all", choices=["dedup", "anti", "zhuque", "all"])
-    parser.add_argument("--epsilon", type=float, default=8.0, help="CNN对抗扰动强度 (像素值 0-255)")
-    parser.add_argument("--steps", type=int, default=200, help="CNN对抗迭代步数")
-    parser.add_argument("--model", default="resnet50", help="CNN模型名")
-    parser.add_argument("--alpha", type=float, default=2.0, help="CNN对抗每步幅度")
+    parser.add_argument("--epsilon", type=float, default=8.0, help="CNN 扰动强度 (像素值 0-255)")
+    parser.add_argument("--steps", type=int, default=200, help="CNN 迭代步数")
+    parser.add_argument("--model", default="resnet50", help="CNN 模型名")
+    parser.add_argument("--alpha", type=float, default=2.0, help="CNN 每步幅度")
     parser.add_argument("--cover", action="store_true", help="生成封面图")
     parser.add_argument("--title", default="", help="封面标题文字")
     parser.add_argument("--brand", default="", help="封面品牌名")
-    parser.add_argument("--skip-cnn", action="store_true", help="跳过CNN对抗层 (无PyTorch时)")
-    parser.add_argument("--input-images", nargs='+', help="指定处理哪些图片 (不传则处理input目录全部)")
+    parser.add_argument("--skip-cnn", action="store_true", help="跳过 CNN 层 (无 PyTorch 时)")
+    parser.add_argument("--input-images", nargs='+', help="指定处理哪些图片")
     parser.add_argument("--similar-mode", action="store_true",
-                        help="疑似相似图也一并剔除 (默认6-10人工确认)")
+                        help="疑似相似图也一并剔除")
 
     args = parser.parse_args()
     os.makedirs(args.output, exist_ok=True)
@@ -490,7 +490,7 @@ def main():
             if similar:
                 print(f"  ⚠ {len(similar)} 张疑似相似保留在目录中 (--similar-mode 可强制剔除)")
 
-    # Step 2: 对抗处理
+    # Step 2: 特征变换
     kept_images = []
     for path in kept_paths:
         try:
@@ -503,24 +503,23 @@ def main():
         name, ext = os.path.splitext(base)
 
         if args.mode in ('anti', 'all'):
-            anti = WechatImageAntiDetect(epsilon=args.epsilon, steps=args.steps, model_name=args.model)
-            img, _ = anti.run(img, skip_cnn=args.skip_cnn, alpha=args.alpha)
-            out_name = f"{name}_anti{ext}"
+            transformer = EmbeddingTransformer(epsilon=args.epsilon, steps=args.steps, model_name=args.model)
+            img, _ = transformer.run(img, skip_cnn=args.skip_cnn, alpha=args.alpha)
+            out_name = f"{name}_transformed{ext}"
             out_path = os.path.join(args.output, out_name)
             img.save(out_path, quality=95, subsampling=0)
             kept_images.append(out_path)
-            print(f"  [对抗] {base} → {out_name}")
+            print(f"  [变换] {base} → {out_name}")
 
         elif args.mode == 'zhuque':
-            zq = ZhuqueDetectorBypass()
-            img = zq.bypass(img)
-            out_name = f"{name}_human{ext}"
+            freq = FrequencyDomainProcessor()
+            img = freq.process(img)
+            out_name = f"{name}_freq{ext}"
             out_path = os.path.join(args.output, out_name)
             img.save(out_path, quality=90, subsampling='4:2:0')
             kept_images.append(out_path)
-            print(f"  [朱雀] {base} → {out_name}")
+            print(f"  [频域] {base} → {out_name}")
         else:
-            # 仅去重, 直接复制
             out_path = os.path.join(args.output, base)
             img.save(out_path, quality=95)
             kept_images.append(out_path)
@@ -533,8 +532,7 @@ def main():
         cover_gen.generate(source, title=args.title, output_path=cover_path, brand_text=args.brand)
         print(f"[封面] 生成 900×383 → {cover_path}")
 
-    # 输出总结
-    print(f"\n✅ 完成! 输出 {len(kept_images)} 张图片至 {args.output}")
+    print(f"\nDone: 输出 {len(kept_images)} 张图片至 {args.output}")
 
 
 if __name__ == "__main__":
