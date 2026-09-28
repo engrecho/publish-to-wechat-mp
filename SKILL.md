@@ -1,6 +1,6 @@
 ---
 name: gzh-pipeline
-description: 公众号内容生产全流程编排：解析内容 → 原创化改写（四层改写+原创性自检+标题/简介生成）→ 图片处理（去重+头图生成）→ 排版 → 发布。当用户要求端到端生产/发布一篇公众号文章，或提到"跑一遍完整流程/从原文到发布"时触发；单个阶段任务直接调用对应子技能。
+description: 公众号内容生产全流程编排：解析内容 → 原创化改写（四层改写+原创性自检+标题/简介生成）→ 图片处理（三层原创对抗+去重+朱雀对抗+头图生成）→ 排版 → 发布。当用户要求端到端生产/发布一篇公众号文章，或提到"跑一遍完整流程/从原文到发布"时触发；单个阶段任务直接调用对应子技能。
 version: 2.0.0
 metadata:
   openclaw:
@@ -28,7 +28,7 @@ metadata:
 2_content-rewriter      ② 原创化改写 → rewritten.md（四层改写 + 原创自检 + 标题 + 简介）
    │
    ▼
-3_image-processor       ③ 图片处理 → images/（去重后正文图 + cover.jpg 头图）
+3_image-processor       ③ 图片处理 → images/（三层原创对抗 + 去重后正文图 + cover.jpg 头图）
    │
    ▼
 4_theme-formator       ④ 排版 → final.html（微信格式 HTML + 预览）
@@ -46,7 +46,7 @@ metadata:
 | `SKILL.md`（0_ 总编排） | 阶段调度、产物验收、失败回退 |
 | `1_content-parser/` | 阶段①：解析内容（视频平台链接委托 `1_content-parser/vendor/all-platform-video-extract/` 解析） |
 | `2_content-rewriter/` | 阶段②：原创化改写 + 原创检测 + 标题/简介生成（脚本在 `2_content-rewriter/scripts/`） |
-| `3_image-processor/` | 阶段③：图片去重 + 头图生成 |
+| `3_image-processor/` | 阶段③：图片去重 + 微信三层原创对抗（pHash/SIFT/CNN）+ 朱雀AI检测对抗 + 头图生成（核心脚本 `anti_dedup.py`） |
 | `4_theme-formator/` | 阶段④：排版渲染（核心流程在 `4_theme-formator/vendor/gzh-design/SKILL.md`，本地主题在 `4_theme-formator/themes-local/`，注入脚本在 `4_theme-formator/scripts/`） |
 | `5_article-publisher/` | 阶段⑤：发布（remote-api / api / browser，脚本在 `5_article-publisher/scripts/`，配置文档在 `5_article-publisher/references/`） |
 | `server/` | 服务器端微信发布中转服务（含部署脚本 `server/deploy.sh` 与部署说明） |
@@ -78,7 +78,7 @@ metadata:
 | ① source.md 无噪音、图片已登记 | 补充解析 |
 | ② 原创自检三项指标达标（重复片段 0 / LCS<13 / 8-gram 重合率<20%） | 回②重改，最多 3 轮；仍不过走降级方案（见 2_content-rewriter） |
 | ② 标题/简介已产出（10 候选评分选 1） | 必须产出才能进入③ |
-| ③ 重复图已剔除、cover.jpg 已生成 | 回③补做 |
+| ③ 重复图已剔除、所有图已完成三层对抗（pHash≥12、SIFT<30%）、cover.jpg 已生成 | 回③补做 |
 | ④ final.html 预览无溢出、无死链 | 回④修排版 |
 | ⑤ 草稿保存成功（拿到 media_id） | 按 5_article-publisher 常见问题排查 |
 
@@ -100,7 +100,7 @@ metadata:
 
 1. ① 1_content-parser：抓取 URL → `work/ai-job-impact/source.md`
 2. ② 2_content-rewriter：四层改写 → 原创自检（`bun 2_content-rewriter/scripts/originality-check.ts`）→ 10 标题评分选 1 → 简介 → `work/ai-job-impact/rewritten.md`
-3. ③ 3_image-processor：下载图片、pHash 去重、生成 900×383 封面 → `work/ai-job-impact/images/`
+3. ③ 3_image-processor：下载图片、三层原创对抗（`anti_dedup.py --mode all`）、生成 900×383 封面 → `work/ai-job-impact/images/`
 4. ④ 4_theme-formator：渲染 final.html + 预览
 5. ⑤ 5_article-publisher：remote-api 方式存草稿，报告 media_id 与后台链接
 
@@ -109,6 +109,7 @@ metadata:
 - Bun（`brew install oven-sh/bun/bun` 或 `npm install -g bun`）
 - 发布配置 `.post-to-wechat/EXTEND.md`（详见 5_article-publisher/SKILL.md 与 5_article-publisher/references/）
 - remote-api 方式需服务器 IP（62.234.16.218）已加入微信 IP 白名单
+- 图片对抗依赖：`pip install pillow numpy imagehash opencv-python-headless scipy torch torchvision`
 
 ## 语言
 
