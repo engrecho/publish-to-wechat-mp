@@ -179,7 +179,7 @@ class WechatImageAntiDetect:
         img = img.crop((crop_px, crop_px, w - crop_px, h - crop_px))
         img = img.rotate(rotate_deg, resample=Image.BICUBIC, fillcolor=(255, 255, 255))
         arr = np.array(img, dtype=np.float32)
-        noise = np.random.randint(-strength * 5, strength * 5 + 1, arr.shape)
+        noise = np.random.randint(-noise_strength * 5, noise_strength * 5 + 1, arr.shape)
         arr = np.clip(arr + noise, 0, 255).astype(np.uint8)
         return Image.fromarray(arr)
 
@@ -241,11 +241,11 @@ class WechatImageAntiDetect:
         backbone.fc = torch.nn.Identity()
         backbone = backbone.to(device).eval()
 
-        # 归一化参数
-        mean = torch.tensor([0.485, 0.456, 0.406], device=device).view(1, 3, 1, 1)
-        std = torch.tensor([0.229, 0.224, 0.225], device=device).view(1, 3, 1, 1)
-        norm_min_t = torch.tensor(self.norm_min, device=device).reshape(1, 3, 1, 1)
-        norm_max_t = torch.tensor(self.norm_max, device=device).reshape(1, 3, 1, 1)
+        # 归一化参数 (确保 float32)
+        mean = torch.tensor([0.485, 0.456, 0.406], device=device, dtype=torch.float32).view(1, 3, 1, 1)
+        std = torch.tensor([0.229, 0.224, 0.225], device=device, dtype=torch.float32).view(1, 3, 1, 1)
+        norm_min_t = torch.tensor(self.norm_min, device=device, dtype=torch.float32).reshape(1, 3, 1, 1)
+        norm_max_t = torch.tensor(self.norm_max, device=device, dtype=torch.float32).reshape(1, 3, 1, 1)
 
         # 预处理
         preprocess = transforms.Compose([
@@ -254,7 +254,7 @@ class WechatImageAntiDetect:
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
-        x_orig = preprocess(img).unsqueeze(0).to(device)
+        x_orig = preprocess(img).unsqueeze(0).to(device, dtype=torch.float32)
         x_orig.requires_grad = False
 
         with torch.no_grad():
