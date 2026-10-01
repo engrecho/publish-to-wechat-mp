@@ -10,8 +10,10 @@
 ├── SKILL.md                  # 0_ 总编排：阶段调度、产物验收、失败回退
 ├── 1_content-parser/         # ① 解析内容：URL/文件/文本 → source.md
 │   └── vendor/               #    all-platform-video-extract 镜像（视频链接解析）
-├── 2_content-rewriter/       # ② 原创化改写：四层改写 + 原创自检 + 标题/简介生成
-│   └── scripts/              #    originality-check.ts 原创性自检
+├── 2_content-rewriter/       # ② 原创化改写：四层改写 + 原创自检（本地+易撰+aifox）+ 标题/简介生成
+│   ├── scripts/              #    originality-check.ts 本地原创性自检
+│   ├── yizhuan/              #    易撰原创度检测（独立子技能，可单独触发）
+│   └── aifoxs/               #    ContentAny AI 痕迹检测（独立子技能，可单独触发）
 ├── 3_image-processor/        # ③ 图片处理：感知哈希去重 + 头图生成（900×383）
 ├── 4_theme-formator/         # ④ 排版：Markdown → 微信友好 HTML
 │   ├── vendor/gzh-design/    #    上游 gzh-design-skill 镜像（GitHub Action 每日自动同步）
@@ -52,7 +54,11 @@
 
 1. **理解原文核心**：核心观点、论证逻辑、目标读者、情绪基调。
 2. **四层深度改写**：观点层（加入独有评论/案例/结论，决定性）→ 结构层（重组段落顺序、重拟小标题）→ 句式层（拆并句、换视角）→ 词汇层（同义替换，仅辅助）。
-3. **原创性自检**：`bun 2_content-rewriter/scripts/originality-check.ts` 比对 source 与 rewritten——≥13 字连续重复片段 0 个、最长公共子串 < 13 字、8-gram 重合率 < 20%。不过关回第 2 步重改（最多 3 轮，仍不过走降级方案按转载发布）。
+3. **原创性自检**（本地 + 外部，全部通过才算完成）：
+   - **本地**：`bun 2_content-rewriter/scripts/originality-check.ts` 比对 source 与 rewritten——≥13 字连续重复片段 0 个、最长公共子串 < 13 字、8-gram 重合率 < 20%（最多 3 轮重改）
+   - **易撰**：`yizhuan/` 子技能调用「一键检测」，原创度 ≥ 75 分（最多 5 次迭代，分数无变化即停；额度用完提醒用户）
+   - **aifox**：`aifoxs/` 子技能运行 `aifoxs_detect.py`，全文 AI 指数 < 20%（账号池自动管理，熔断时降级）
+   - 外部检测不可用时降级为仅本地自检并在报告注明；全部不过走降级方案按转载发布
 4. **标题生成**：10 个候选标题，五维度评分选出 1 个最佳。
 5. **简介生成**：写入 frontmatter。
 
@@ -147,7 +153,7 @@ remote-api 方式需先完成服务器侧配置（微信 IP 白名单等），�
 
 ## 原创性检测说明
 
-微信没有公开的原创检测查询 API（检测发生在发布/声明原创时，由平台自动比对全网已声明原创内容）。本项目采用四层防护：
+微信没有公开的原创检测查询 API（检测发生在发布/声明原创时，由平台自动比对全网已声明原创内容）。本项目采用五层防护：
 
 1. **预防**：2_content-rewriter 的四层改写（观点层为主，杜绝纯同义词替换式洗稿）
 2. **本地自检**：`2_content-rewriter/scripts/originality-check.ts`（发布前代理指标）
@@ -158,8 +164,11 @@ remote-api 方式需先完成服务器侧配置（微信 IP 白名单等），�
 
    通过标准：≥13 字连续重复片段 0 个、最长公共子串 < 13 字、8-gram 重合率 < 20%
 
-3. **发布后验证**：后台尝试声明原创，提示相似则回改写阶段加强
-4. **降级方案**：多次不过则不声明原创按转载发布（保留原文链接）
+3. **外部检测**（均可单独触发，不可用时降级为仅本地自检）：
+   - **易撰原创度**：`2_content-rewriter/yizhuan/`（yizhuan-cli-installer-pro，目标 ≥ 75 分）
+   - **aifox AI 痕迹**：`2_content-rewriter/aifoxs/`（cn.aifoxs.com 逆向接口，AI 指数 < 20%）
+4. **发布后验证**：后台尝试声明原创，提示相似则回改写阶段加强
+5. **降级方案**：多次不过则不声明原创按转载发布（保留原文链接）
 
 ## 发布方式
 
