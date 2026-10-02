@@ -1,6 +1,6 @@
 ---
 name: publisher
-description: 发布到微信公众号。支持 remote-api（默认，经白名单服务器 SSH SOCKS5 隧道出口）、api、browser 三种方式，将最终 HTML 存为公众号草稿。当用户要求"发布/发草稿/推送到公众号"时触发；在 gzh-pipeline 流程中作为最后阶段。
+description: 发布到微信公众号。支持 pipeline-api（默认推荐，经 https://pub.bajiaolu.cn 流水线控制台中转，凭据托管服务器，客户端零凭据）、server-api、remote-api、api、browser 多种方式，将最终 HTML 存为公众号草稿。当用户要求"发布/发草稿/推送到公众号"时触发；在 gzh-pipeline 流程中作为最后阶段。
 version: 2.0.0
 metadata:
   openclaw:
@@ -26,13 +26,28 @@ metadata:
 
 | 方式 | 速度 | 前置条件 |
 |------|------|---------|
-| remote-api（默认推荐） | 快 | API 凭据 + SSH 可达且 IP 在微信白名单的服务器（62.234.16.218） |
+| **pipeline-api（默认推荐）** | 快 | 仅需 `https://pub.bajiaolu.cn` 可达；微信凭据托管在服务器 `data/settings.json`，客户端零凭据 |
+| server-api | 快 | 服务器中转地址 + token（`server_publish_url` / `server_publish_token`） |
+| remote-api | 快 | API 凭据 + SSH 可达且 IP 在微信白名单的服务器（62.234.16.218） |
 | api | 快 | API 凭据，本机 IP 必须在白名单内 |
 | browser | 慢 | Chrome + 已登录公众号的会话 |
+
+**pipeline-api 原理与凭据托管**（实战验证，优先使用）：
+
+- 链路：客户端把 `final.html` / `rewritten.md` / 封面等产物提交到流水线控制台 `https://pub.bajiaolu.cn`，由控制台在服务器上完成正文图上传（uploadimg）、封面素材（add_material）、`draft/add` 存草稿；微信 API 调用均从服务器出口发出（出口 IP 已在微信白名单内）
+- 内部链路：控制台（pub-pipeline，本机 3000 端口）→ relay `http://127.0.0.1:8080`（wechat-publish 中转服务，Bearer token 鉴权）→ `api.weixin.qq.com`
+- **凭据只存服务器**：微信 AppID / AppSecret 写在控制台 `data/settings.json`（键 `wechat.appid` / `wechat.appsecret`，经 `POST /api/settings` 更新）。客户端、文档、聊天记录中一律**不持有、不传递 AppSecret 明文**
+- 典型 API：
+  - `POST /api/jobs` 建任务 → `POST /api/jobs/:id/stage/:n/run` 逐阶段执行
+  - `POST /api/jobs/:id/stage/2/submit` 提交阶段②改写稿
+  - `GET /api/jobs/:id/artifact?name=<file>` 拉取产物
+  - `POST /api/settings` 写入微信凭据等全局配置
 
 **remote-api 原理**：渲染、图片处理、草稿组装均在本地完成，仅发往 api.weixin.qq.com 的 HTTPS 调用（token、uploadimg、add_material、draft/add）经 SSH SOCKS5 动态端口转发从服务器出口发出。AppSecret 不离开本地进程，服务器上不写入任何文件。
 
 ## 偏好设置（EXTEND.md）
+
+> **pipeline-api 方式无需 EXTEND.md**（凭据托管在服务器 `data/settings.json`）；以下配置仅 server-api / remote-api / api / browser 方式需要。
 
 按顺序检查，首个命中生效：
 
@@ -46,7 +61,7 @@ metadata:
 
 | 键 | 默认值 | 说明 |
 |-----|---------|------|
-| `default_publish_method` | 空 | 设为 `remote-api` 即默认走远程发布 |
+| `default_publish_method` | 空 | 设为 `pipeline-api`（无需本文件其余键）、`server-api` 或 `remote-api` 指定默认发布方式 |
 | `default_author` | 空 | 作者回退值 |
 | `need_open_comment` | `1` | 是否开启评论 |
 | `only_fans_can_comment` | `0` | 是否仅粉丝可评论 |
@@ -87,13 +102,25 @@ only_fans_can_comment: 0
 
 ### 步骤 3：校验凭据
 
+- pipeline-api：凭据托管在服务器，本地无需校验；若发布报 401/403，提示用户在服务器端更新 `data/settings.json`（经 `POST https://pub.bajiaolu.cn/api/settings`）
 - API 凭据缺失 → 按 `./references/api-setup.md` 引导设置（写入 `.post-to-wechat/.env`）
 - remote-api 缺 SSH 配置 → 按 `./references/server-setup.md` 引导（白名单 + sshpass/密钥）
 - 飞行前检查（可选）：`bun ./scripts/check-permissions.ts`
 
 ### 步骤 4：发布
 
-**远程 API 方式（默认）**：
+**pipeline-api 方式（默认）**：
+
+```bash
+bun ./scripts/wechat-server-publish.ts work/<slug>/final.html \
+  --publish-url https://pub.bajiaolu.cn \
+  [--title <title>] [--summary <summary>] [--author <author>] \
+  [--cover work/<slug>/images/cover.jpg] [--source-url <url>] [--no-cite]
+```
+
+> 凭据与 relay token 均在服务器侧（`data/settings.json` / relay 配置），客户端命令行不携带任何密钥参数。控制台 Web API（`/api/jobs`、`/api/jobs/:id/stage/:n/run` 等）与脚本方式等价，端到端流程优先走控制台逐阶段执行以便留痕与验收。
+
+**远程 API 方式**：
 
 ```bash
 bun ./scripts/wechat-api.ts work/<slug>/final.html \
@@ -129,7 +156,7 @@ bun ./scripts/wechat-browser.ts --title "标题" --content "内容" --image img.
 微信公众号发布完成！
 
 输入：[type] - [path]
-方式：[remote-api | api | 浏览器]
+方式：[pipeline-api | server-api | remote-api | api | 浏览器]
 主题：[theme] [color]
 
 文章信息：
@@ -151,6 +178,7 @@ bun ./scripts/wechat-browser.ts --title "标题" --content "内容" --image img.
 
 | 问题 | 修复方法 |
 |------|---------|
+| pipeline-api 报 401/403 | relay token 或服务器侧配置问题：检查控制台 relay 指向 `http://127.0.0.1:8080` 与 `data/settings.json` 中 `wechat.appid` / `wechat.appsecret` 是否有效 |
 | `errcode 40164`（IP 无效） | 服务器出口 IP 不在微信白名单，公众号设置 → 基本配置 → IP 白名单中添加 |
 | `SOCKS proxy on 127.0.0.1:… not ready` | SSH 隧道未建立：检查主机/凭据/StrictHostKeyChecking，链路慢提高 connect-timeout |
 | `sshpass: command not found` | 安装 sshpass（macOS：`brew install hudochenkov/sshpass/sshpass`；Ubuntu：`apt install sshpass`）或改用密钥 |

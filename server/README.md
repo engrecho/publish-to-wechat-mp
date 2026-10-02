@@ -4,6 +4,16 @@
 
 解决微信公众号 API 的 **IP 白名单**限制：本服务部署在腾讯云服务器（出口 IP 已加入白名单），客户端把发布请求发到本服务，由本服务从服务器出口转发到 `api.weixin.qq.com`。
 
+**在整体架构中的位置**（实战验证架构）：本服务是**内部 relay**（`127.0.0.1:8080`，PM2 服务名 `wechat-publish`），主要调用方是同机的流水线控制台 `pub-pipeline`（公网入口 `https://pub.bajiaolu.cn`，服务器本机 3000 端口）。推荐链路：
+
+```
+客户端（零凭据） → https://pub.bajiaolu.cn（pub-pipeline 控制台）
+    → http://127.0.0.1:8080（本服务，Bearer token 鉴权）
+    → https://api.weixin.qq.com
+```
+
+微信 AppID / AppSecret 托管在控制台的 `data/settings.json`（键 `wechat.appid` / `wechat.appsecret`），本服务与客户端均不持有明文凭据；凭据变更经 `POST https://pub.bajiaolu.cn/api/settings` 在服务器端完成。
+
 技术：Node.js 原生 HTTP 代理（无第三方框架），无数据库。
 
 ## 目录内容
@@ -52,6 +62,8 @@ curl -X POST "https://deploy.bajiaolu.cn/api/tasks?token=$KEY" \
 ```
 
 ## 客户端配置
+
+> **pipeline-api（默认推荐）方式无需以下配置**——客户端零凭据，凭据托管在流水线控制台 `data/settings.json`。以下仅 direct server-api 方式（客户端 → 本服务直连）需要：
 
 ```yaml
 # ~/.post-to-wechat/EXTEND.md

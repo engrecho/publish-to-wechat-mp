@@ -48,8 +48,8 @@ metadata:
 | `2_content-rewriter/` | 阶段②：文本改写 + 重复度检测 + 标题/简介生成（本地自检脚本在 `2_content-rewriter/scripts/`；外部检测子技能：易撰原创度 `yizhuan/`、aifox AI 痕迹 `aifoxs/`，均可单独触发） |
 | `3_image-processor/` | 阶段③：图片去重 + pHash/SIFT/CNN 三层特征变换 + AI 检测器频域处理 + 头图生成（核心脚本 `anti_dedup.py`） |
 | `4_theme-formator/` | 阶段④：排版渲染（核心流程在 `4_theme-formator/vendor/gzh-design/SKILL.md`，本地主题在 `4_theme-formator/themes-local/`，注入脚本在 `4_theme-formator/scripts/`） |
-| `5_article-publisher/` | 阶段⑤：发布（remote-api / api / browser，脚本在 `5_article-publisher/scripts/`，配置文档在 `5_article-publisher/references/`） |
-| `server/` | 服务器端微信发布中转服务（含部署脚本 `server/deploy.sh` 与部署说明） |
+| `5_article-publisher/` | 阶段⑤：发布（pipeline-api 默认 / server-api / remote-api / api / browser，脚本在 `5_article-publisher/scripts/`，配置文档在 `5_article-publisher/references/`） |
+| `server/` | 服务器端微信发布中转服务（内部 relay `127.0.0.1:8080`，服务名 `wechat-publish`，被流水线控制台调用；含部署脚本 `server/deploy.sh` 与部署说明） |
 | `work/<slug>/` | 单篇文章的工作目录（中间产物，不入库） |
 
 ## 编排规则
@@ -94,6 +94,22 @@ metadata:
 - **声明流程**：后台执行声明操作，若提示与已有文章相似，回到②针对相似文章加强改写后重新走 ④⑤
 - 「阅读原文」链接指向原文 source_url（转载属性内容）
 
+## 发布方式与凭据托管（重要约定）
+
+| 方式 | 链路 | 微信凭据位置 | 定位 |
+|------|------|-------------|------|
+| **pipeline-api（默认推荐）** | 客户端 → `https://pub.bajiaolu.cn`（流水线控制台 pub-pipeline）→ 内部 relay `http://127.0.0.1:8080`（wechat-publish）→ `api.weixin.qq.com` | 服务器 `data/settings.json` | 实战验证，客户端零凭据 |
+| server-api | 客户端 → 服务器中转（`server_publish_url` + token）→ 微信 | 客户端 `.env` | 备用 |
+| remote-api | 本地组装渲染，仅微信 HTTPS 调用经 SSH SOCKS5 从服务器出口发出 | 客户端 `.env` | 备用 |
+| api / browser | 本机直连微信 / 浏览器会话 | 本地 | 特殊场景 |
+
+**凭据托管约定（pipeline-api）**：
+
+1. 微信公众号 AppID / AppSecret **只存服务器**：写入流水线控制台 `data/settings.json`（键 `wechat.appid` / `wechat.appsecret`，经 `POST https://pub.bajiaolu.cn/api/settings` 更新），客户端与代码仓库中**零凭据**
+2. 不要在文档、聊天记录、日志、代码仓库中传递或存储 AppSecret 明文；凭据变更一律通过服务器端 `POST /api/settings` 操作
+3. `https://pub.bajiaolu.cn` 是流水线控制台的公网入口（服务器本机 3000 端口），对外发布统一走该域名，不使用裸 IP
+4. 服务器出口 IP（62.234.16.218）已加入微信 IP 白名单，pipeline-api / server-api / remote-api 均依赖此白名单
+
 ## 全流程调用示例
 
 用户："把这篇 https://example.com/article 改写发布到公众号"
@@ -102,13 +118,13 @@ metadata:
 2. ② 2_content-rewriter：四层转换 → 重复度自检（`bun 2_content-rewriter/scripts/originality-check.ts`）→ 10 标题评分选 1 → 简介 → `work/ai-job-impact/rewritten.md`
 3. ③ 3_image-processor：下载图片、三层特征变换处理（`anti_dedup.py --mode all`）、生成 900×383 封面 → `work/ai-job-impact/images/`
 4. ④ 4_theme-formator：渲染 final.html + 预览
-5. ⑤ 5_article-publisher：remote-api 方式存草稿，报告 media_id 与后台链接
+5. ⑤ 5_article-publisher：pipeline-api 方式经 `https://pub.bajiaolu.cn` 存草稿，报告 media_id 与后台链接
 
 ## 环境要求
 
 - Bun（`brew install oven-sh/bun/bun` 或 `npm install -g bun`）
-- 发布配置 `.post-to-wechat/EXTEND.md`（详见 5_article-publisher/SKILL.md 与 5_article-publisher/references/）
-- remote-api 方式需服务器 IP（62.234.16.218）已加入微信 IP 白名单
+- 发布：默认走 pipeline-api（`https://pub.bajiaolu.cn`），**客户端无需任何微信凭据与 `.post-to-wechat/EXTEND.md`**；仅 server-api / remote-api / api 方式需要 EXTEND.md（详见 5_article-publisher/SKILL.md 与 5_article-publisher/references/）
+- 服务器出口 IP（62.234.16.218）已加入微信 IP 白名单（pipeline-api / server-api / remote-api 均依赖）
 - 图片特征变换依赖：`pip install pillow numpy imagehash opencv-python-headless scipy torch torchvision`
 
 ## 语言
