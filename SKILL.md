@@ -1,7 +1,7 @@
 ---
 name: gzh-pipeline
 description: 公众号内容生产全流程编排：解析内容 → 文本改写（四层转换+重复度自检+标题/简介生成）→ 图片处理（去重+三层感知特征变换+频域处理+头图生成）→ 排版 → 发布。当用户要求端到端生产/发布一篇公众号文章，或提到"跑一遍完整流程/从原文到发布"时触发；单个阶段任务直接调用对应子技能。
-version: 2.0.0
+version: 2.1.0
 metadata:
   openclaw:
     requires:
@@ -45,7 +45,7 @@ metadata:
 |------|------|
 | `SKILL.md`（0_ 总编排） | 阶段调度、产物验收、失败回退 |
 | `1_content-parser/` | 阶段①：解析内容（视频平台链接委托 `1_content-parser/vendor/all-platform-video-extract/` 解析） |
-| `2_content-rewriter/` | 阶段②：文本改写 + 重复度检测 + 标题/简介生成（本地自检脚本在 `2_content-rewriter/scripts/`；外部检测子技能：易撰原创度 `yizhuan/`、aifox AI 痕迹 `aifoxs/`，均可单独触发） |
+| `2_content-rewriter/` | 阶段②：敏感范畴复审（`references/sensitive-rules.md`）+ 文本改写 + 重复度检测 + 标题/简介生成（本地自检脚本在 `2_content-rewriter/scripts/`；外部检测子技能：易撰原创度 `yizhuan/`、aifox AI 痕迹 `aifoxs/`，均可单独触发） |
 | `3_image-processor/` | 阶段③：图片水印处理（默认仅右下角微信平台水印）+ 去重 + pHash/SIFT/CNN 三层特征变换 + AI 检测器频域处理 + 头图生成（核心脚本 `anti_dedup.py`；服务器端水印实现在流水线控制台 `lib/watermark.js`） |
 | `4_theme-formator/` | 阶段④：排版渲染（核心流程在 `4_theme-formator/vendor/gzh-design/SKILL.md`，本地主题在 `4_theme-formator/themes-local/`，注入脚本在 `4_theme-formator/scripts/`） |
 | `5_article-publisher/` | 阶段⑤：发布（pipeline-api 默认 / server-api / remote-api / api / browser，脚本在 `5_article-publisher/scripts/`，配置文档在 `5_article-publisher/references/`） |
@@ -77,6 +77,7 @@ metadata:
 |--------|-------------|
 | ① source.md 无噪音、图片已登记 | 补充解析 |
 | ② 重复度自检三项指标达标（重复片段 0 / LCS<13 / 8-gram 重合率<20%）；外部检测达标（易撰原创度 ≥75 分、aifox AI 指数 <20%，服务不可用时降级为仅本地自检并注明） | 回②重改，最多 3 轮；仍不过走降级方案（见 2_content-rewriter） |
+| ② 敏感范畴复审通过（十类红线零命中，或命中项已按"保留事实、重写表达"处理并留复审记录） | 回②重写，最多 3 轮；仍不过则放弃选题 |
 | ② 标题/简介已产出（10 候选评分选 1） | 必须产出才能进入③ |
 | ③ 水印已按档位处理（默认仅微信平台水印；自加水印档默认关闭）、重复图已剔除、所有图已完成三层特征变换（pHash≥12、SIFT<30%）、cover.jpg 已生成 | 回③补做 |
 | ④ final.html 预览无溢出、无死链 | 回④修排版 |
